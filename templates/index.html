@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeFixer AI | Analizador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+
+    <header class="border-b border-slate-700 p-4 bg-slate-800 shadow-xl">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-400"><i class="fas fa-code-branch mr-2"></i>CodeFixer <span class="text-white font-light">Analyzer</span></h1>
+            <span class="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">v1.0 Beta</span>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="lg:col-span-2 space-y-4">
+            <div class="flex items-center justify-between bg-slate-800 p-3 rounded-t-lg border-b border-slate-700">
+                <span class="text-sm font-mono text-slate-400 italic italic">main.py</span>
+                <button onclick="analizarCodigo()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-1.5 rounded-md transition-all font-semibold shadow-lg">
+                    <i class="fas fa-play mr-2 text-xs"></i> Analizar Código
+                </button>
+            </div>
+            <textarea id="codeEditor" class="w-full h-[500px] bg-slate-800 p-4 font-mono text-sm border-x border-b border-slate-700 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none" placeholder="# Pega tu código Python aquí..."></textarea>
+        </div>
+
+        <div class="space-y-4">
+            <h2 class="text-lg font-semibold flex items-center"><i class="fas fa-magic mr-2 text-yellow-400"></i> Hallazgos</h2>
+            <div id="resultsPanel" class="bg-slate-800 border border-slate-700 rounded-lg h-[500px] overflow-y-auto p-4 space-y-4">
+                <p class="text-slate-500 text-center mt-20">El análisis no ha comenzado aún.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function analizarCodigo() {
+            const code = document.getElementById('codeEditor').value;
+            const panel = document.getElementById('resultsPanel');
+
+            if(!code.trim()) {
+                alert("Por favor, escribe algo de código primero.");
+                return;
+            }
+
+            // Simulación de carga
+            panel.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner animate-spin text-3xl text-blue-500"></i></div>';
+
+            // Aquí conectaremos con el backend de Vercel después
+            setTimeout(() => {
+                panel.innerHTML = `
+                    <div class="p-3 bg-red-500/10 border-l-4 border-red-500 rounded">
+                        <p class="text-red-400 font-bold text-sm">Seguridad Crítica</p>
+                        <p class="text-xs mt-1 text-slate-300 italic">Se detectó uso de 'eval()'. Esto puede permitir ejecución de código malicioso.</p>
+                    </div>
+                    <div class="p-3 bg-yellow-500/10 border-l-4 border-yellow-500 rounded">
+                        <p class="text-yellow-400 font-bold text-sm">Mejora de Estilo</p>
+                        <p class="text-xs mt-1 text-slate-300">La función 'calcular' no tiene docstring.</p>
+                    </div>
+                `;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
