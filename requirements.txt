@@ -1,4 +1,3 @@
 flask
 astor
-parso
-black
+
