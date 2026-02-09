@@ -3,50 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analizador de Código Python con IA</title>
+<title>Analizador de Código Python</title>
 <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-    h1 { text-align: center; color: #333; }
-    textarea { width: 100%; min-height: 150px; padding: 10px; font-family: monospace; margin-bottom: 10px; }
-    pre { background: #eee; padding: 10px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
-    button { padding: 10px 20px; margin: 5px 0; cursor: pointer; }
-    .section { margin-bottom: 20px; }
-    .label { font-weight: bold; margin-bottom: 5px; display: block; }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h1 { text-align: center; }
+    textarea { width: 100%; height: 200px; margin-bottom: 10px; font-family: monospace; font-size: 14px; }
+    pre { background: #272822; color: #f8f8f2; padding: 10px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+    button { padding: 10px 20px; margin-right: 10px; margin-top: 10px; cursor: pointer; }
+    .container { max-width: 900px; margin: auto; }
+    label { font-weight: bold; display: block; margin-top: 15px; }
 </style>
 </head>
 <body>
+<div class="container">
+    <h1>Analizador de Código Python</h1>
 
-<h1>Analizador de Código Python con IA</h1>
+    <label for="codigo">Código a analizar:</label>
+    <textarea id="codigo" placeholder="Pega tu código Python aquí..."></textarea>
 
-<div class="section">
-    <span class="label">Código a analizar:</span>
-    <textarea id="codigo"></textarea>
-    <button onclick="analizarCodigo()">Analizar</button>
-</div>
+    <button id="btnAnalizar">Analizar</button>
+    <button id="btnCopiarCodigoCorregido">Copiar Código Corregido</button>
+    <button id="btnDescargar">Descargar Código Corregido</button>
 
-<div class="section">
-    <span class="label">Reporte de errores y advertencias:</span>
-    <pre id="reporte"></pre>
-</div>
+    <label>Reporte de errores:</label>
+    <pre id="reporte">Aquí aparecerán los errores y advertencias.</pre>
 
-<div class="section">
-    <span class="label">Código corregido:</span>
-    <pre id="codigoCorregido"></pre>
-    <button onclick="copiarCodigo('codigoCorregido')">Copiar código corregido</button>
-    <button onclick="descargarCodigo()">Descargar código corregido</button>
-</div>
+    <label>Código corregido:</label>
+    <pre id="codigoCorregido">Aquí aparecerá el código corregido.</pre>
 
-<div class="section">
-    <span class="label">Análisis semántico (IA):</span>
-    <pre id="analisisIA"></pre>
+    <label>Análisis semántico (IA):</label>
+    <pre id="analisisIA">Aquí aparecerá el análisis semántico de IA.</pre>
 </div>
 
 <script>
-async function analizarCodigo() {
+document.getElementById('btnAnalizar').addEventListener('click', async () => {
     const codigo = document.getElementById('codigo').value;
-    document.getElementById('reporte').textContent = 'Analizando...';
-    document.getElementById('codigoCorregido').textContent = '';
-    document.getElementById('analisisIA').textContent = '';
+    if (!codigo.trim()) return alert('Ingresa código para analizar.');
 
     try {
         const response = await fetch('/analyze', {
@@ -54,57 +46,41 @@ async function analizarCodigo() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code: codigo })
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            document.getElementById('reporte').textContent = 'Error al analizar: ' + JSON.stringify(error);
-            return;
-        }
-
         const data = await response.json();
 
         // Mostrar reporte de errores
         let reporteTexto = '';
         data.report.forEach(r => {
-            reporteTexto += `[${r.tipo.toUpperCase()}] Linea ${r.linea || '-'}: ${r.mensaje}\n`;
+            reporteTexto += `[${r.tipo.toUpperCase()}] Línea ${r.linea || '-'}: ${r.mensaje}\n`;
         });
         document.getElementById('reporte').textContent = reporteTexto;
 
         // Mostrar código corregido
         document.getElementById('codigoCorregido').textContent = data.fixed_code;
 
-        // Mostrar análisis semántico IA
-        document.getElementById('analisisIA').textContent = data.semantica;
-
+        // Mostrar análisis semántico IA (si existe)
+        document.getElementById('analisisIA').textContent = data.semantica || 'IA no disponible';
     } catch (err) {
         document.getElementById('reporte').textContent = 'Error al conectar con el servidor: ' + err;
+        document.getElementById('analisisIA').textContent = 'IA no disponible';
     }
-}
+});
 
-function copiarCodigo(id) {
-    const texto = document.getElementById(id).textContent;
-    navigator.clipboard.writeText(texto).then(() => {
-        alert('Código copiado al portapapeles.');
-    });
-}
-
-async function descargarCodigo() {
+document.getElementById('btnCopiarCodigoCorregido').addEventListener('click', () => {
     const codigo = document.getElementById('codigoCorregido').textContent;
-    const response = await fetch('/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: codigo })
-    });
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
+    navigator.clipboard.writeText(codigo).then(() => alert('Código copiado al portapapeles'));
+});
+
+document.getElementById('btnDescargar').addEventListener('click', () => {
+    const codigo = document.getElementById('codigoCorregido').textContent;
+    const blob = new Blob([codigo], { type: 'text/x-python' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'codigo_reparado.py';
-    document.body.appendChild(a);
     a.click();
-    a.remove();
-}
+    URL.revokeObjectURL(url);
+});
 </script>
-
 </body>
 </html>
