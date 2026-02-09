@@ -3,31 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeFixer AI | Analizador Estático</title>
+    <title>CodeFixer Pro | SAST Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+        body { font-family: 'Inter', sans-serif; }
         .font-mono { font-family: 'Fira Code', monospace; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
+<body class="bg-[#0b0f1a] text-slate-200 min-h-screen">
 
-    <nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="bg-blue-600 p-2 rounded-lg">
-                    <i class="fas fa-microchip text-white"></i>
+    <nav class="border-b border-slate-800 bg-[#0b0f1a]/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-shield-halved text-white"></i>
                 </div>
-                <h1 class="text-xl font-bold tracking-tight">Code<span class="text-blue-500">Fixer</span></h1>
+                <div>
+                    <h1 class="text-lg font-bold leading-none">CodeFixer <span class="text-blue-500">Analyzer</span></h1>
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Security & Style Engine</span>
+                </div>
             </div>
-            <div class="flex gap-4">
-                <a href="https://github.com" target="_blank" class="text-slate-400 hover:text-white transition shadow-sm">
-                    <i class="fab fa-github text-xl"></i>
-                </a>
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">Python 3.9+</span>
             </div>
         </div>
     </nav>
@@ -36,36 +38,44 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             <div class="lg:col-span-8 space-y-4">
-                <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-2xl">
-                    <div class="flex items-center justify-between px-4 py-3 bg-slate-800/50 border-b border-slate-800">
-                        <div class="flex gap-2">
-                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                <div class="bg-[#111827] rounded-2xl border border-slate-800 overflow-hidden shadow-2xl transition-all hover:border-slate-700">
+                    <div class="flex items-center justify-between px-5 py-3 bg-slate-800/40 border-b border-slate-800">
+                        <div class="flex items-center gap-4">
+                            <div class="flex gap-1.5">
+                                <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                            </div>
+                            <span class="text-xs font-mono text-slate-400">workspace / main.py</span>
                         </div>
-                        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">python_analyzer.py</span>
-                        <button onclick="analizarCodigo()" id="btnAnalizar" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg transition-all active:scale-95 shadow-lg shadow-blue-900/20">
-                            <i class="fas fa-wand-magic-sparkles text-sm"></i>
-                            <span class="font-semibold">Analizar</span>
+                        <button onclick="analizarCodigo()" id="btnAnalizar" class="group flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg transition-all active:scale-95 font-semibold shadow-lg shadow-blue-900/40">
+                            <i class="fas fa-bolt text-xs group-hover:animate-pulse"></i>
+                            <span>Ejecutar Análisis</span>
                         </button>
                     </div>
                     <textarea id="codeEditor" 
-                        class="w-full h-[600px] bg-slate-900 p-6 font-mono text-sm text-blue-100 focus:outline-none resize-none leading-relaxed"
-                        placeholder="# Pega tu código Python aquí...&#10;def ejemplo():&#10;    eval('print(123)') # Prueba esto"
+                        class="w-full h-[650px] bg-[#0d1117] p-6 font-mono text-sm text-blue-50 focus:outline-none resize-none leading-relaxed custom-scroll"
+                        placeholder="# Pega tu código aquí...&#10;import os&#10;&#10;def mi_funcion(a, b, c, d, e, f):&#10;    eval('print(a)')&#10;    if False:&#10;        return True"
                         spellcheck="false"></textarea>
                 </div>
             </div>
 
             <div class="lg:col-span-4 flex flex-col gap-4">
-                <div class="bg-slate-900 rounded-xl border border-slate-800 p-6 h-full shadow-xl">
-                    <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
-                        <i class="fas fa-clipboard-list text-blue-500"></i> Reporte de Análisis
-                    </h2>
+                <div class="bg-[#111827] rounded-2xl border border-slate-800 p-6 h-[725px] shadow-xl flex flex-col">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <i class="fas fa-list-check text-blue-500 text-sm"></i> Hallazgos
+                        </h2>
+                        <span id="issueCount" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700 hidden">0 Problemas</span>
+                    </div>
                     
-                    <div id="resultsPanel" class="space-y-4 overflow-y-auto max-h-[550px] pr-2">
-                        <div class="text-center py-20">
-                            <i class="fas fa-code text-slate-800 text-6xl mb-4"></i>
-                            <p class="text-slate-500 text-sm italic">Listo para analizar tu código.</p>
+                    <div id="resultsPanel" class="space-y-4 overflow-y-auto flex-grow custom-scroll pr-2">
+                        <div class="flex flex-col items-center justify-center h-full opacity-40">
+                            <div class="relative mb-4">
+                                <i class="fas fa-code-commit text-6xl text-slate-700"></i>
+                                <i class="fas fa-search text-2xl text-blue-500 absolute -bottom-1 -right-1"></i>
+                            </div>
+                            <p class="text-slate-500 text-sm text-center">Esperando entrada de código...</p>
                         </div>
                     </div>
                 </div>
@@ -74,28 +84,20 @@
         </div>
     </main>
 
-    <footer class="mt-12 py-8 border-t border-slate-900 text-center text-slate-600 text-sm">
-        <p>Desplegado en <strong>Vercel</strong> con Python 3.9</p>
-    </footer>
-
     <script>
         async function analizarCodigo() {
             const code = document.getElementById('codeEditor').value;
             const panel = document.getElementById('resultsPanel');
             const btn = document.getElementById('btnAnalizar');
+            const counter = document.getElementById('issueCount');
 
-            if (!code.trim()) {
-                panel.innerHTML = `
-                    <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 text-sm text-center">
-                        <i class="fas fa-info-circle mr-2"></i> Por favor, ingresa código.
-                    </div>`;
-                return;
-            }
+            if (!code.trim()) return;
 
-            // Estado de carga
+            // UI Loading State
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Analizando...';
-            panel.innerHTML = '<div class="flex justify-center items-center h-40"><i class="fas fa-circle-notch animate-spin text-3xl text-blue-500"></i></div>';
+            btn.classList.add('opacity-70', 'cursor-not-allowed');
+            btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> Analizando...';
+            panel.innerHTML = '<div class="flex flex-col items-center justify-center h-full"><i class="fas fa-circle-notch animate-spin text-4xl text-blue-600 mb-4"></i><p class="text-slate-500 text-xs animate-pulse font-mono">AST_PARSING_ENGINE...</p></div>';
 
             try {
                 const response = await fetch('/analizar', {
@@ -104,39 +106,62 @@
                     body: JSON.stringify({ code: code })
                 });
 
-                const data = await response.json();
+                const findings = await response.json();
                 panel.innerHTML = '';
-
-                if (data.length === 0) {
+                
+                if (findings.length === 0) {
+                    counter.classList.add('hidden');
                     panel.innerHTML = `
-                        <div class="text-center py-10">
-                            <i class="fas fa-check-circle text-green-500 text-4xl mb-3"></i>
-                            <p class="text-slate-300 font-medium">¡Todo limpio!</p>
-                            <p class="text-slate-500 text-xs">No se encontraron problemas.</p>
+                        <div class="flex flex-col items-center justify-center h-full text-center p-6 border border-dashed border-slate-800 rounded-xl">
+                            <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-check text-green-500 text-2xl"></i>
+                            </div>
+                            <p class="font-bold text-slate-200">¡Código impecable!</p>
+                            <p class="text-slate-500 text-xs mt-2">No se detectaron vulnerabilidades ni errores de estilo.</p>
                         </div>`;
                 } else {
-                    data.forEach(res => {
-                        const isError = res.tipo === 'peligro' || res.tipo === 'error';
-                        const colorClass = isError ? 'red' : 'yellow';
-                        const icon = isError ? 'fa-exclamation-triangle' : 'fa-lightbulb';
+                    counter.innerText = `${findings.length} Hallazgos`;
+                    counter.classList.remove('hidden');
 
+                    findings.forEach(res => {
+                        // Mapeo dinámico de colores según tu diccionario SEVERIDAD del backend
+                        const config = {
+                            'critico': { color: 'red', icon: 'fa-radiation' },
+                            'peligro': { color: 'orange', icon: 'fa-exclamation-circle' },
+                            'advertencia': { color: 'yellow', icon: 'fa-triangle-exclamation' },
+                            'info': { color: 'blue', icon: 'fa-circle-info' },
+                            'error': { color: 'pink', icon: 'fa-bug' }
+                        };
+
+                        const ui = config[res.tipo] || { color: 'slate', icon: 'fa-circle' };
+                        
                         panel.innerHTML += `
-                            <div class="group p-4 bg-${colorClass}-500/5 border border-${colorClass}-500/20 rounded-xl hover:bg-${colorClass}-500/10 transition-all border-l-4 border-l-${colorClass}-500 shadow-sm">
-                                <div class="flex items-start gap-3">
-                                    <i class="fas ${icon} text-${colorClass}-500 mt-1"></i>
-                                    <div>
-                                        <h3 class="font-bold text-sm text-${colorClass}-400 uppercase tracking-tight">${res.titulo}</h3>
-                                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">${res.desc}</p>
+                            <div class="group relative p-4 bg-${ui.color}-500/5 border border-${ui.color}-500/20 rounded-xl hover:bg-${ui.color}-500/10 transition-all border-l-[4px] border-l-${ui.color}-500">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas ${ui.icon} text-${ui.color}-500 text-xs"></i>
+                                        <span class="text-[10px] font-black uppercase text-${ui.color}-400 tracking-tighter">${res.codigo}</span>
                                     </div>
+                                    <span class="text-[10px] text-slate-600 font-mono bg-slate-950 px-2 py-0.5 rounded">Línea ${res.linea}</span>
+                                </div>
+                                <p class="text-sm text-slate-300 font-medium leading-snug">${res.mensaje}</p>
+                                <div class="mt-3 flex gap-2">
+                                    <span class="text-[9px] px-2 py-0.5 rounded bg-slate-900 text-slate-500 capitalize">${res.tipo}</span>
                                 </div>
                             </div>`;
                     });
                 }
             } catch (error) {
-                panel.innerHTML = `<p class="text-red-400 text-sm text-center">Error al conectar con la API</p>`;
+                panel.innerHTML = `
+                    <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+                        <i class="fas fa-circle-xmark text-red-500 text-2xl mb-2"></i>
+                        <p class="text-red-400 text-xs font-bold uppercase">Error de Conexión</p>
+                        <p class="text-slate-500 text-[10px] mt-1">Asegúrate de que el backend de Vercel esté corriendo.</p>
+                    </div>`;
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles text-sm"></i> <span class="font-semibold">Analizar</span>';
+                btn.classList.remove('opacity-70', 'cursor-not-allowed');
+                btn.innerHTML = '<i class="fas fa-bolt text-xs"></i> <span>Ejecutar Análisis</span>';
             }
         }
     </script>
