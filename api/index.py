@@ -1,9 +1,17 @@
-from flask import Flask, request, jsonify, send_from_directory
+import os
+from flask import Flask, request, jsonify, render_template, Response
 import ast
 import astor
+import black
+import autopep8
+import isort
+from flake8.api import legacy as flake8
 
-app = Flask(__name__, static_folder=".")
+# Templates al nivel superior
+template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
+app = Flask(__name__, template_folder=template_dir)
 
+# ----------------- AUTO REPAIR -----------------
 class AutoRepair(ast.NodeTransformer):
     def __init__(self):
         self.cambios = 0
@@ -16,7 +24,7 @@ class AutoRepair(ast.NodeTransformer):
         return self.generic_visit(node)
 
 def reparar_codigo(code):
-    # Intento simple: agrega ":" faltantes al final de def / if / for / while / class
+    # AST básico: docstrings y ":" faltantes
     lines = code.split("\n")
     for i, line in enumerate(lines):
         stripped = line.strip()
@@ -24,20 +32,42 @@ def reparar_codigo(code):
             lines[i] += ":"
     repaired = "\n".join(lines)
 
+    # AST para docstrings
     try:
         tree = ast.parse(repaired)
         motor = AutoRepair()
         nuevo_tree = motor.visit(tree)
         ast.fix_missing_locations(nuevo_tree)
         codigo_final = astor.to_source(nuevo_tree)
-        return codigo_final, motor.cambios
     except Exception:
-        # Si falla, devuelve el código como está
-        return repaired, 0
+        codigo_final = repaired
 
+    # Formateo con Black
+    try:
+        codigo_final = black.format_str(codigo_final, mode=black.Mode())
+    except Exception:
+        pass
+
+    # Formateo con autopep8
+    codigo_final = autopep8.fix_code(codigo_final)
+
+    # Organizar imports con isort
+    codigo_final = isort.code(codigo_final)
+
+    return codigo_final, motor.cambios
+
+def analizar_errores_flake8(code):
+    style_guide = flake8.get_style_guide(ignore=['E501'])
+    report = style_guide.input_file(filename='temp.py', lines=code.splitlines())
+    errores = []
+    for e in report.get_statistics(''):
+        errores.append({"mensaje": e, "tipo": "warning"})
+    return errores
+
+# ----------------- RUTAS -----------------
 @app.route("/")
 def home():
-    return send_from_directory(".", "index.html")
+    return render_template("index.html")
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
@@ -45,21 +75,26 @@ def analyze():
     code = data.get("code", "")
     report = []
 
+    # Intento de parse AST
     try:
         ast.parse(code)
-        report.append({"linea": 0, "mensaje": "No se encontraron errores", "tipo": "ok"})
-        fixed_code, cambios = reparar_codigo(code)
+        report.append({"linea": 0, "mensaje": "No se encontraron errores críticos", "tipo": "ok"})
     except SyntaxError as e:
         report.append({"linea": e.lineno, "mensaje": str(e), "tipo": "critico"})
-        fixed_code, cambios = reparar_codigo(code)
+
+    # Reparar código
+    fixed_code, cambios = reparar_codigo(code)
+
+    # Analizar errores de estilo con flake8
+    errores_flake = analizar_errores_flake8(fixed_code)
+    report.extend(errores_flake)
 
     return jsonify(report=report, fixed_code=fixed_code, cambios=cambios)
 
 @app.route("/download", methods=["POST"])
 def download():
     code = request.json.get("code", "")
-    return (code, 200, {
-        "Content-Type": "text/x-python",
+    return Response(code, mimetype="text/x-python", headers={
         "Content-Disposition": "attachment; filename=codigo_reparado.py"
     })
 
