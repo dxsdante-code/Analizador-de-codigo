@@ -1,6 +1,9 @@
-flask
-autopep8
-black
-isort
-requests
-flake8
+Flask==3.0.0
+requests==2.31.0
+
+black==24.1.1
+autopep8==2.0.4
+isort==5.13.2
+astor==0.8.1
+
+flake8==7.0.0
