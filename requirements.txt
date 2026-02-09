@@ -1,6 +1,7 @@
 flask
 astor
+requests
 black
 autopep8
 isort
-requests
+flake8
