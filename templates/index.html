@@ -1,223 +1,122 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Motor de Análisis Python 2.1</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-      padding: 20px;
-    }
-
-    h1, h2, h3 {
-      color: #38bdf8;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 180px;
-      background: #020617;
-      color: #e5e7eb;
-      border: 1px solid #334155;
-      padding: 10px;
-      margin-bottom: 15px;
-      font-family: monospace;
-      font-size: 14px;
-    }
-
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      margin: 5px 5px 5px 0;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-
-    button.alt {
-      background: #16a34a;
-    }
-
-    button.warn {
-      background: #ca8a04;
-    }
-
-    button.danger {
-      background: #dc2626;
-    }
-
-    .panel {
-      background: #020617;
-      border: 1px solid #334155;
-      padding: 15px;
-      margin-top: 20px;
-    }
-
-    ul {
-      padding-left: 20px;
-    }
-
-    .error {
-      color: #f87171;
-    }
-
-    .ok {
-      color: #4ade80;
-    }
-
-    .warning {
-      color: #facc15;
-    }
-
-    .alternativa {
-      border: 1px dashed #64748b;
-      padding: 10px;
-      margin-top: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Fixer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
 
-<h1>🧠 Motor de Análisis y Corrección Python 2.1</h1>
+    <div class="max-w-7xl mx-auto space-y-6">
+        <header class="flex justify-between items-center border-b border-slate-700 pb-4">
+            <h1 class="text-2xl font-bold text-blue-400"><i class="fas fa-microchip mr-2"></i>Analizador Python IA</h1>
+            <span class="text-slate-400 text-sm">v2.0 Beta</span>
+        </header>
 
-<h3>Código a analizar</h3>
-<textarea id="codeInput" placeholder="Pega aquí tu código Python..."></textarea>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="space-y-4">
+                <div class="flex flex-col">
+                    <label class="mb-2 text-sm font-medium text-slate-300">Código Fuente:</label>
+                    <textarea id="inputCode" class="w-full h-80 bg-slate-800 border border-slate-700 rounded-lg p-4 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all" placeholder="Pega tu código Python aquí..."></textarea>
+                </div>
+                
+                <button onclick="analizarCodigo()" id="btnAnalyze" class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-wand-magic-sparkles"></i> Analizar y Reparar
+                </button>
 
-<button onclick="analizar()">Analizar</button>
+                <div class="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-slate-400 mb-3 underline">Reporte de Análisis</h3>
+                    <div id="reportContainer" class="space-y-2 max-h-40 overflow-y-auto text-xs italic">
+                        Esperando análisis...
+                    </div>
+                </div>
+            </div>
 
-<div class="panel">
-  <h3>📋 Reporte del Motor</h3>
-  <ul id="listaErrores"></ul>
-</div>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <label class="text-sm font-medium text-slate-300">Código Corregido / Sugerido:</label>
+                    <div class="flex gap-2">
+                        <button onclick="cambiarVersion('original')" class="px-3 py-1 text-xs bg-slate-700 rounded hover:bg-slate-600 active:bg-blue-600">Original</button>
+                        <button onclick="cambiarVersion('reparado')" class="px-3 py-1 text-xs bg-slate-700 rounded hover:bg-slate-600 active:bg-blue-600">Auto-Fix</button>
+                    </div>
+                </div>
 
-<div class="panel">
-  <h3>🛠 Código corregido</h3>
-  <textarea id="codigoCorregido"></textarea>
+                <div class="relative group">
+                    <textarea id="outputCode" readonly class="w-full h-80 bg-slate-950 border border-emerald-900/30 rounded-lg p-4 font-mono text-sm text-emerald-400" placeholder="El resultado aparecerá aquí..."></textarea>
+                    <button onclick="copiarCodigo()" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 rounded border border-slate-600 text-slate-300 transition-all">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
 
-  <button onclick="copiar()">Copiar</button>
-  <button onclick="descargar()">Descargar</button>
-</div>
+                <div class="p-4 bg-amber-900/20 border border-amber-700/50 rounded-lg">
+                    <h3 class="text-sm font-semibold text-amber-400 mb-2">Análisis de la IA:</h3>
+                    <p id="iaAnalysis" class="text-xs text-slate-300 leading-relaxed italic">Sin datos.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div class="panel" id="iaPanel" style="display:none;">
-  <h3>🤖 Análisis Semántico (IA)</h3>
+    <script>
+        let codigos = { original: "", reparado: "" };
 
-  <p><strong>Intención detectada:</strong>
-    <span id="iaIntencion"></span>
-  </p>
+        async function analizarCodigo() {
+            const code = document.getElementById('inputCode').value;
+            const btn = document.getElementById('btnAnalyze');
+            const reportDiv = document.getElementById('reportContainer');
+            
+            if (!code.trim()) return alert("Por favor ingresa algo de código.");
 
-  <div id="iaErrores"></div>
-</div>
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Analizando...';
+            reportDiv.innerHTML = "Procesando...";
 
-<script>
-let codigoActual = "";
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ code: code })
+                });
+                
+                const data = await response.json();
 
-async function analizar() {
-  const code = document.getElementById("codeInput").value;
+                // Guardar versiones
+                codigos.original = code;
+                codigos.reparado = data.codigo_limpio;
 
-  const res = await fetch("/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code })
-  });
+                // Mostrar reporte
+                reportDiv.innerHTML = data.reporte_estatico.map(err => 
+                    `<div class="p-2 bg-slate-700/50 rounded border-l-4 border-amber-500">
+                        <span class="font-bold">[${err.tipo}]</span> ${err.mensaje}
+                    </div>`
+                ).join('') || "No se detectaron errores de estilo.";
 
-  const data = await res.json();
+                // Mostrar código corregido y análisis IA
+                document.getElementById('outputCode').value = data.codigo_limpio;
+                document.getElementById('iaAnalysis').innerText = typeof data.analisis_ia === 'string' 
+                    ? data.analisis_ia 
+                    : JSON.stringify(data.analisis_ia);
 
-  // ---- Reportes motor ----
-  const ul = document.getElementById("listaErrores");
-  ul.innerHTML = "";
-  data.report.forEach(e => {
-    const li = document.createElement("li");
-    li.className = e.tipo;
-    li.textContent = `${e.tipo.toUpperCase()}: ${e.mensaje}`;
-    ul.appendChild(li);
-  });
+            } catch (error) {
+                console.error(error);
+                reportDiv.innerHTML = "Error al conectar con el servidor.";
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Analizar y Reparar';
+            }
+        }
 
-  // ---- Código corregido ----
-  codigoActual = data.fixed_code || "";
-  document.getElementById("codigoCorregido").value = codigoActual;
+        function cambiarVersion(tipo) {
+            document.getElementById('outputCode').value = codigos[tipo] || "";
+        }
 
-  // ---- IA ----
-  const panel = document.getElementById("iaPanel");
-  const cont = document.getElementById("iaErrores");
-  cont.innerHTML = "";
-
-  if (data.ia && !data.ia.error) {
-    panel.style.display = "block";
-    document.getElementById("iaIntencion").textContent =
-      data.ia.intencion || "No detectada";
-
-    data.ia.errores.forEach((err, idx) => {
-      const div = document.createElement("div");
-      div.className = "alternativa";
-
-      let html = `
-        <p><b>Línea ${err.linea}</b>: ${err.descripcion}</p>
-        <p>Clasificación: <b>${err.clasificacion}</b></p>
-      `;
-
-      if (err.alternativas && err.alternativas.length > 0) {
-        err.alternativas.forEach(alt => {
-          html += `
-            <button class="alt"
-              onclick="aplicarAlternativa(${idx}, '${alt.id}')">
-              Aplicar alternativa ${alt.id}
-            </button>
-            <pre>${alt.descripcion}</pre>
-          `;
-        });
-      }
-
-      div.innerHTML = html;
-      cont.appendChild(div);
-    });
-  } else {
-    panel.style.display = "none";
-  }
-}
-
-function aplicarAlternativa(indiceError, idAlternativa) {
-  // El backend ya envió el código alternativo
-  // Aquí simplemente lo reemplazamos completo (modo seguro)
-  alert(
-    "Alternativa " + idAlternativa +
-    " aplicada.\n\n(Revisión manual recomendada)"
-  );
-
-  // En una versión 2.2 se podría hacer patch por líneas
-  document.getElementById("codigoCorregido").value +=
-    "\n\n# --- Alternativa " + idAlternativa + " aplicada manualmente ---\n";
-}
-
-function copiar() {
-  navigator.clipboard.writeText(
-    document.getElementById("codigoCorregido").value
-  );
-  alert("Código copiado");
-}
-
-function descargar() {
-  fetch("/download", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      code: document.getElementById("codigoCorregido").value
-    })
-  })
-  .then(res => res.blob())
-  .then(blob => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "codigo_reparado.py";
-    a.click();
-  });
-}
-</script>
-
+        function copiarCodigo() {
+            const out = document.getElementById('outputCode');
+            out.select();
+            document.execCommand('copy');
+            alert("Código copiado al portapapeles");
+        }
+    </script>
 </body>
 </html>
