@@ -1,86 +1,140 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analizador de Código Python</title>
-<style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
-    h1 { text-align: center; }
-    textarea { width: 100%; height: 200px; margin-bottom: 10px; font-family: monospace; font-size: 14px; }
-    pre { background: #272822; color: #f8f8f2; padding: 10px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
-    button { padding: 10px 20px; margin-right: 10px; margin-top: 10px; cursor: pointer; }
-    .container { max-width: 900px; margin: auto; }
-    label { font-weight: bold; display: block; margin-top: 15px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador de Código Python</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        textarea, pre {
+            width: 100%;
+            box-sizing: border-box;
+            font-family: monospace;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background: #fff;
+        }
+        button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .btn-analyze { background-color: #4CAF50; color: white; }
+        .btn-copy { background-color: #2196F3; color: white; }
+        .btn-download { background-color: #f44336; color: white; }
+        .section {
+            margin-bottom: 20px;
+        }
+        .report-line {
+            margin-bottom: 5px;
+        }
+        .report-line.ok { color: green; }
+        .report-line.warning { color: orange; }
+        .report-line.critico { color: red; font-weight: bold; }
+    </style>
 </head>
 <body>
-<div class="container">
-    <h1>Analizador de Código Python</h1>
+    <h1>Analizador y Corrector de Código Python</h1>
 
-    <label for="codigo">Código a analizar:</label>
-    <textarea id="codigo" placeholder="Pega tu código Python aquí..."></textarea>
+    <div class="section">
+        <label for="codeInput">Código Python:</label>
+        <textarea id="codeInput" rows="12" placeholder="Pega aquí tu código Python..."></textarea>
+        <button class="btn-analyze" onclick="analizarCodigo()">Analizar</button>
+    </div>
 
-    <button id="btnAnalizar">Analizar</button>
-    <button id="btnCopiarCodigoCorregido">Copiar Código Corregido</button>
-    <button id="btnDescargar">Descargar Código Corregido</button>
+    <div class="section">
+        <label>Errores y Reportes:</label>
+        <pre id="reportOutput">Aquí aparecerán los errores y advertencias...</pre>
+    </div>
 
-    <label>Reporte de errores:</label>
-    <pre id="reporte">Aquí aparecerán los errores y advertencias.</pre>
+    <div class="section">
+        <label>Código Corregido:</label>
+        <textarea id="fixedCode" rows="12" readonly></textarea>
+        <button class="btn-copy" onclick="copiarCodigo()">Copiar Código</button>
+        <button class="btn-download" onclick="descargarCodigo()">Descargar</button>
+    </div>
 
-    <label>Código corregido:</label>
-    <pre id="codigoCorregido">Aquí aparecerá el código corregido.</pre>
+    <div class="section">
+        <label>Análisis Semántico (IA):</label>
+        <pre id="semanticOutput">Aquí aparecerá la explicación semántica del código...</pre>
+    </div>
 
-    <label>Análisis semántico (IA):</label>
-    <pre id="analisisIA">Aquí aparecerá el análisis semántico de IA.</pre>
-</div>
+    <script>
+        async function analizarCodigo() {
+            const code = document.getElementById('codeInput').value;
 
-<script>
-document.getElementById('btnAnalizar').addEventListener('click', async () => {
-    const codigo = document.getElementById('codigo').value;
-    if (!codigo.trim()) return alert('Ingresa código para analizar.');
+            // Limpiar campos antes de análisis
+            document.getElementById('reportOutput').textContent = 'Analizando...';
+            document.getElementById('fixedCode').value = '';
+            document.getElementById('semanticOutput').textContent = 'Consultando IA...';
 
-    try {
-        const response = await fetch('/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: codigo })
-        });
-        const data = await response.json();
+            try {
+                // Llamada al endpoint de análisis de errores y autorepair
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await response.json();
 
-        // Mostrar reporte de errores
-        let reporteTexto = '';
-        data.report.forEach(r => {
-            reporteTexto += `[${r.tipo.toUpperCase()}] Línea ${r.linea || '-'}: ${r.mensaje}\n`;
-        });
-        document.getElementById('reporte').textContent = reporteTexto;
+                // Mostrar reportes
+                let reportText = '';
+                data.report.forEach(r => {
+                    reportText += `[${r.tipo}] Línea ${r.linea || '-'}: ${r.mensaje}\n`;
+                });
+                document.getElementById('reportOutput').textContent = reportText;
 
-        // Mostrar código corregido
-        document.getElementById('codigoCorregido').textContent = data.fixed_code;
+                // Mostrar código corregido
+                document.getElementById('fixedCode').value = data.fixed_code || '';
 
-        // Mostrar análisis semántico IA (si existe)
-        document.getElementById('analisisIA').textContent = data.semantica || 'IA no disponible';
-    } catch (err) {
-        document.getElementById('reporte').textContent = 'Error al conectar con el servidor: ' + err;
-        document.getElementById('analisisIA').textContent = 'IA no disponible';
-    }
-});
+                // Llamada al endpoint semántico IA
+                const semanticResp = await fetch('/semantic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const semanticData = await semanticResp.json();
+                document.getElementById('semanticOutput').textContent = semanticData.semantica || 'IA no disponible';
+            } catch (err) {
+                document.getElementById('reportOutput').textContent = 'Error al analizar el código: ' + err;
+                document.getElementById('semanticOutput').textContent = '';
+            }
+        }
 
-document.getElementById('btnCopiarCodigoCorregido').addEventListener('click', () => {
-    const codigo = document.getElementById('codigoCorregido').textContent;
-    navigator.clipboard.writeText(codigo).then(() => alert('Código copiado al portapapeles'));
-});
+        function copiarCodigo() {
+            const fixedCode = document.getElementById('fixedCode');
+            fixedCode.select();
+            fixedCode.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            alert('Código copiado al portapapeles');
+        }
 
-document.getElementById('btnDescargar').addEventListener('click', () => {
-    const codigo = document.getElementById('codigoCorregido').textContent;
-    const blob = new Blob([codigo], { type: 'text/x-python' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'codigo_reparado.py';
-    a.click();
-    URL.revokeObjectURL(url);
-});
-</script>
+        function descargarCodigo() {
+            const code = document.getElementById('fixedCode').value;
+            const blob = new Blob([code], { type: 'text/x-python' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'codigo_corregido.py';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
 </body>
 </html>
