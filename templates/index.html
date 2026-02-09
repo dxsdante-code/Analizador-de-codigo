@@ -15,126 +15,133 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-
 <body class="text-slate-200 min-h-screen">
 
-<nav class="border-b border-slate-800 bg-[#0d111c] px-6 py-4 sticky top-0 z-50">
-    <div class="container mx-auto flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <div class="bg-indigo-600 p-2 rounded-lg">
-                <i class="fas fa-magic text-white"></i>
+    <nav class="border-b border-slate-800 bg-[#0d111c] px-6 py-4 sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-900/20">
+                    <i class="fas fa-magic text-white"></i>
+                </div>
+                <h1 class="text-xl font-bold text-white">Code<span class="text-indigo-400">Fixer</span></h1>
             </div>
-            <h1 class="text-xl font-bold text-white">Code<span class="text-indigo-400">Fixer</span></h1>
-        </div>
-        <button onclick="analizarCodigo()" id="btnAnalizar"
-            class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2 rounded-xl font-bold">
-            <i class="fas fa-play"></i> Analizar y Corregir
-        </button>
-    </div>
-</nav>
-
-<main class="container mx-auto px-4 py-8">
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-<div class="lg:col-span-8">
-    <div class="bg-[#111827] rounded-2xl border border-slate-800 overflow-hidden">
-        <div class="flex justify-between px-5 py-3 bg-[#161e2e] border-b border-slate-800">
-            <span class="text-[11px] font-mono uppercase">Editor de código</span>
-            <span id="statusTag" class="hidden text-[10px] text-green-400">✔ Código corregido</span>
-        </div>
-        <textarea id="codeEditor"
-            class="w-full h-[600px] bg-[#0d1117] p-6 font-mono text-sm text-indigo-100 resize-none custom-scroll"
-            placeholder="# Pega tu código aquí..."></textarea>
-    </div>
-</div>
-
-<div class="lg:col-span-4">
-    <div class="bg-[#111827] rounded-2xl border border-slate-800 p-6 h-[650px] flex flex-col">
-        <h2 class="text-xs font-bold uppercase mb-4">Reporte</h2>
-
-        <div id="fixButtonContainer" class="hidden mb-4">
-            <button onclick="aplicarMejoras()"
-                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl font-bold">
-                Aplicar mejoras
+            <button onclick="analizarCodigo()" id="btnAnalizar" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2 rounded-xl font-bold transition-all active:scale-95 flex items-center gap-2">
+                <i class="fas fa-play"></i> Analizar y Corregir
             </button>
         </div>
+    </nav>
 
-        <div id="resultsPanel" class="flex-grow overflow-y-auto custom-scroll space-y-3">
-            <div class="opacity-40 text-center text-xs mt-20">
-                Ejecuta el análisis para ver resultados
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <div class="lg:col-span-8">
+                <div class="bg-[#111827] rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
+                    <div class="flex items-center justify-between px-5 py-3 bg-[#161e2e] border-b border-slate-800 text-slate-500">
+                        <span class="text-[11px] font-mono uppercase tracking-widest">Editor de código</span>
+                        <div id="statusTag" class="hidden text-[10px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded border border-green-500/20 italic">Corregido disponible</div>
+                    </div>
+                    <textarea id="codeEditor" 
+                        class="w-full h-[600px] bg-[#0d1117] p-6 font-mono text-sm text-indigo-100 focus:outline-none resize-none leading-relaxed custom-scroll"
+                        placeholder="# Pega tu código aquí..."></textarea>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 space-y-4">
+                <div class="bg-[#111827] rounded-2xl border border-slate-800 p-6 h-[650px] flex flex-col shadow-xl">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <i class="fas fa-chart-line text-indigo-500"></i> Reporte y Sugerencias
+                    </h2>
+                    
+                    <div id="fixButtonContainer" class="hidden mb-6">
+                        <button onclick="aplicarMejoras()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 transform hover:-translate-y-1">
+                            <i class="fas fa-wand-sparkles"></i> Aplicar Mejoras Automáticas
+                        </button>
+                    </div>
+
+                    <div id="resultsPanel" class="space-y-4 overflow-y-auto flex-grow custom-scroll pr-2">
+                        <div class="flex flex-col items-center justify-center h-full opacity-30 text-center">
+                            <i class="fas fa-microchip text-5xl mb-4"></i>
+                            <p class="text-xs">El análisis aparecerá aquí después de ejecutar.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
+    </main>
 
-</div>
-</main>
+    <script>
+        let codigoSugerido = "";
 
-<script>
-let codigoSugerido = "";
+        async function analizarCodigo() {
+            const code = document.getElementById('codeEditor').value;
+            const panel = document.getElementById('resultsPanel');
+            const btn = document.getElementById('btnAnalizar');
+            const fixBtn = document.getElementById('fixButtonContainer');
+            const statusTag = document.getElementById('statusTag');
 
-const colorMap = {
-    critico: "border-red-500 text-red-400",
-    peligro: "border-orange-500 text-orange-400",
-    advertencia: "border-yellow-500 text-yellow-400",
-    info: "border-blue-500 text-blue-400"
-};
+            if (!code.trim()) return;
 
-async function analizarCodigo() {
-    const code = codeEditor.value.trim();
-    if (!code) return;
+            // UI de carga
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i>';
+            panel.innerHTML = '<div class="flex justify-center py-20"><i class="fas fa-sync fa-spin text-3xl text-indigo-500"></i></div>';
+            fixBtn.classList.add('hidden');
 
-    resultsPanel.innerHTML = '<div class="text-center mt-20">Analizando…</div>';
-    btnAnalizar.disabled = true;
+            try {
+                const response = await fetch('/analizar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
 
-    try {
-        const res = await fetch('/analizar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code })
-        });
+                const data = await response.json();
+                
+                // Limpiar panel
+                panel.innerHTML = '';
+                codigoSugerido = data.codigo_corregido;
 
-        const data = await res.json();
-        resultsPanel.innerHTML = "";
-        btnAnalizar.disabled = false;
+                // Mostrar botón de corregir si hay cambios
+                if (data.cambios_realizados > 0) {
+                    fixBtn.classList.remove('hidden');
+                    statusTag.classList.remove('hidden');
+                } else {
+                    statusTag.classList.add('hidden');
+                }
 
-        if (!res.ok) {
-            resultsPanel.innerHTML = `<div class="text-red-500 text-xs">${data.error?.mensaje || 'Error'}</div>`;
-            return;
+                if (data.hallazgos.length === 0) {
+                    panel.innerHTML = '<div class="text-center p-6 bg-green-500/5 rounded-xl border border-green-500/10 text-green-500 text-xs"><i class="fas fa-star mb-2"></i><br>Código en óptimas condiciones.</div>';
+                } else {
+                    data.hallazgos.forEach(res => {
+                        const colors = { 'critico': 'red', 'peligro': 'orange', 'advertencia': 'yellow', 'info': 'blue' };
+                        const color = colors[res.tipo] || 'slate';
+                        
+                        panel.innerHTML += `
+                            <div class="p-4 bg-slate-900/80 border border-slate-800 rounded-xl border-l-4 border-l-${color}-500 transition-all hover:bg-slate-800 shadow-md">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-[10px] font-black text-${color}-400 uppercase">${res.codigo}</span>
+                                    <span class="text-[9px] text-slate-600">Línea ${res.linea}</span>
+                                </div>
+                                <p class="text-xs text-slate-300 leading-snug">${res.mensaje}</p>
+                            </div>`;
+                    });
+                }
+            } catch (error) {
+                panel.innerHTML = '<p class="text-red-500 text-xs text-center p-4">Error: Revisa la consola o el servidor.</p>';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play"></i> Analizar y Corregir';
+            }
         }
 
-        codigoSugerido = data.codigo_corregido || "";
-        statusTag.classList.toggle('hidden', data.cambios_realizados === 0);
-        fixButtonContainer.classList.toggle('hidden', data.cambios_realizados === 0);
-
-        if (!data.hallazgos || data.hallazgos.length === 0) {
-            resultsPanel.innerHTML = `<div class="text-green-400 text-xs">Código limpio ✔</div>`;
-            return;
+        function aplicarMejoras() {
+            if (codigoSugerido) {
+                document.getElementById('codeEditor').value = codigoSugerido;
+                document.getElementById('fixButtonContainer').classList.add('hidden');
+                document.getElementById('statusTag').classList.add('hidden');
+                // Opcional: Re-analizar automáticamente para verificar limpieza
+                analizarCodigo();
+            }
         }
-
-        data.hallazgos.forEach(h => {
-            const cls = colorMap[h.tipo] || "border-slate-500 text-slate-400";
-            resultsPanel.innerHTML += `
-                <div class="p-3 bg-slate-900 border-l-4 ${cls} rounded">
-                    <div class="text-[10px] font-bold">${h.codigo} · línea ${h.linea}</div>
-                    <div class="text-xs">${h.mensaje}</div>
-                </div>
-            `;
-        });
-
-    } catch (e) {
-        resultsPanel.innerHTML = `<div class="text-red-500 text-xs">Error de conexión</div>`;
-        btnAnalizar.disabled = false;
-    }
-}
-
-function aplicarMejoras() {
-    if (!codigoSugerido) return;
-    codeEditor.value = codigoSugerido;
-    fixButtonContainer.classList.add('hidden');
-    statusTag.classList.add('hidden');
-}
-</script>
-
+    </script>
 </body>
 </html>
