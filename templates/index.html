@@ -1,57 +1,131 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Python Auto-Repair</title>
-<style>
-body { background:#111; color:#eee; font-family: monospace; padding:20px; }
-textarea { width:100%; height:200px; background:#222; color:#eee; border:none; padding:10px; }
-button { margin:5px; padding:10px 15px; cursor:pointer; }
-pre { background:#222; padding:10px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeFixer AI | Python AutoRepair</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { background-color: #0b0f1a; font-family: 'Fira Code', monospace; color: #cbd5e1; }
+    textarea { font-family: 'Fira Code', monospace; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+  </style>
 </head>
-<body>
-<h2>Python Auto-Repair Engine</h2>
+<body class="min-h-screen">
 
-<textarea id="code" placeholder="Pega tu código aquí..."></textarea>
-<br>
-<button onclick="analizar()">🔍 Analizar & Reparar</button>
-<button onclick="descargar()">⬇ Descargar</button>
+  <nav class="bg-[#161b2e] p-4 shadow-lg flex justify-between items-center">
+    <h1 class="text-xl font-bold text-indigo-400">CodeFixer AI</h1>
+    <button id="btnAnalizar" onclick="analizarCodigo()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl flex items-center gap-2">
+      <i class="fas fa-play"></i> Analizar
+    </button>
+  </nav>
 
-<h3>Reporte:</h3>
-<pre id="report">Aquí aparecerá el reporte...</pre>
+  <main class="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-<h3>Código corregido:</h3>
-<pre id="fixed_code">Aquí aparecerá el código corregido...</pre>
+    <!-- Código Original -->
+    <div>
+      <h2 class="mb-2 font-bold text-slate-400">Código Original</h2>
+      <textarea id="codeInput" class="w-full h-[400px] p-4 rounded-xl bg-[#111827] custom-scroll" placeholder="# Pega tu código aquí..."></textarea>
+    </div>
 
-<script>
-async function analizar(){
-    const code = document.getElementById("code").value;
-    const res = await fetch("/analyze", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({code})
-    });
-    const data = await res.json();
-    document.getElementById("report").textContent = JSON.stringify(data.report, null, 2);
-    document.getElementById("fixed_code").textContent = data.fixed_code;
-}
+    <!-- Código Corregido -->
+    <div>
+      <h2 class="mb-2 font-bold text-slate-400">Código Corregido</h2>
+      <textarea id="codeFixed" class="w-full h-[400px] p-4 rounded-xl bg-[#111827] custom-scroll" readonly></textarea>
+      <div class="flex gap-2 mt-2">
+        <button onclick="copiarCodigo()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl flex items-center gap-2">
+          <i class="fas fa-copy"></i> Copiar
+        </button>
+        <button onclick="descargarCodigo()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl flex items-center gap-2">
+          <i class="fas fa-download"></i> Descargar
+        </button>
+      </div>
+    </div>
 
-async function descargar(){
-    const code = document.getElementById("fixed_code").textContent;
-    const res = await fetch("/download", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({code})
-    });
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "codigo_reparado.py";
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
-</script>
+    <!-- Panel de Errores -->
+    <div class="lg:col-span-2">
+      <h2 class="mb-2 font-bold text-slate-400">Reporte de errores y advertencias</h2>
+      <div id="errorPanel" class="w-full h-[200px] p-4 rounded-xl bg-[#111827] overflow-y-auto custom-scroll">
+        <p class="text-slate-500 text-center mt-20">Aquí aparecerán los errores y advertencias después de analizar.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    let codigoCorregido = "";
+
+    async function analizarCodigo() {
+      const code = document.getElementById('codeInput').value;
+      const panel = document.getElementById('errorPanel');
+      const btn = document.getElementById('btnAnalizar');
+
+      if (!code.trim()) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analizando...';
+      panel.innerHTML = '<p class="text-center mt-20 text-indigo-500"><i class="fas fa-sync fa-spin"></i> Analizando...</p>';
+
+      try {
+        const response = await fetch('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code })
+        });
+
+        const data = await response.json();
+
+        // Mostrar código corregido
+        codigoCorregido = data.fixed_code;
+        document.getElementById('codeFixed').value = codigoCorregido;
+
+        // Mostrar reporte de errores
+        panel.innerHTML = '';
+        if (data.report.length === 0) {
+          panel.innerHTML = '<p class="text-green-400 text-center">Código limpio. No se encontraron errores.</p>';
+        } else {
+          data.report.forEach(r => {
+            let color = 'text-slate-400';
+            if (r.tipo === 'critico') color = 'text-red-500';
+            if (r.tipo === 'warning') color = 'text-yellow-400';
+            if (r.tipo === 'ok') color = 'text-green-400';
+            panel.innerHTML += `<p class="${color} mb-1">Línea ${r.linea || '-'}: ${r.mensaje}</p>`;
+          });
+        }
+
+      } catch (error) {
+        panel.innerHTML = `<p class="text-red-500 text-center">Error al analizar: ${error}</p>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play"></i> Analizar';
+      }
+    }
+
+    function copiarCodigo() {
+      navigator.clipboard.writeText(codigoCorregido);
+      alert("Código copiado al portapapeles");
+    }
+
+    async function descargarCodigo() {
+      const response = await fetch('/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: codigoCorregido })
+      });
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'codigo_reparado.py';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }
+  </script>
+
 </body>
 </html>
