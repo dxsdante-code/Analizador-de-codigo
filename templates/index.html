@@ -1,122 +1,143 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Code Fixer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<meta charset="UTF-8" />
+<title>Analizador de Código Python</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  margin: 0;
+  padding: 20px;
+}
+textarea {
+  width: 100%;
+  min-height: 160px;
+  background: #020617;
+  color: #e5e7eb;
+  border: 1px solid #334155;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-family: monospace;
+}
+button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin: 4px;
+  cursor: pointer;
+}
+button.alt {
+  background: #16a34a;
+}
+button.warn {
+  background: #dc2626;
+}
+.section {
+  border: 1px solid #334155;
+  padding: 10px;
+  margin-top: 15px;
+}
+pre {
+  background: #020617;
+  padding: 10px;
+  overflow-x: auto;
+}
+</style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-7xl mx-auto space-y-6">
-        <header class="flex justify-between items-center border-b border-slate-700 pb-4">
-            <h1 class="text-2xl font-bold text-blue-400"><i class="fas fa-microchip mr-2"></i>Analizador Python IA</h1>
-            <span class="text-slate-400 text-sm">v2.0 Beta</span>
-        </header>
+<body>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="space-y-4">
-                <div class="flex flex-col">
-                    <label class="mb-2 text-sm font-medium text-slate-300">Código Fuente:</label>
-                    <textarea id="inputCode" class="w-full h-80 bg-slate-800 border border-slate-700 rounded-lg p-4 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all" placeholder="Pega tu código Python aquí..."></textarea>
-                </div>
-                
-                <button onclick="analizarCodigo()" id="btnAnalyze" class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
-                    <i class="fas fa-wand-magic-sparkles"></i> Analizar y Reparar
-                </button>
+<h2>Analizador de Código Python</h2>
 
-                <div class="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                    <h3 class="text-sm font-medium text-slate-400 mb-3 underline">Reporte de Análisis</h3>
-                    <div id="reportContainer" class="space-y-2 max-h-40 overflow-y-auto text-xs italic">
-                        Esperando análisis...
-                    </div>
-                </div>
-            </div>
+<textarea id="inputCode" placeholder="Pega aquí tu código Python..."></textarea>
+<button onclick="analizar()">Analizar</button>
 
-            <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                    <label class="text-sm font-medium text-slate-300">Código Corregido / Sugerido:</label>
-                    <div class="flex gap-2">
-                        <button onclick="cambiarVersion('original')" class="px-3 py-1 text-xs bg-slate-700 rounded hover:bg-slate-600 active:bg-blue-600">Original</button>
-                        <button onclick="cambiarVersion('reparado')" class="px-3 py-1 text-xs bg-slate-700 rounded hover:bg-slate-600 active:bg-blue-600">Auto-Fix</button>
-                    </div>
-                </div>
+<div class="section">
+<h3>Reporte</h3>
+<ul id="reporte"></ul>
+</div>
 
-                <div class="relative group">
-                    <textarea id="outputCode" readonly class="w-full h-80 bg-slate-950 border border-emerald-900/30 rounded-lg p-4 font-mono text-sm text-emerald-400" placeholder="El resultado aparecerá aquí..."></textarea>
-                    <button onclick="copiarCodigo()" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 rounded border border-slate-600 text-slate-300 transition-all">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                </div>
+<div class="section">
+<h3>Código corregido</h3>
+<button onclick="copiar()">Copiar</button>
+<pre id="codigo"></pre>
+</div>
 
-                <div class="p-4 bg-amber-900/20 border border-amber-700/50 rounded-lg">
-                    <h3 class="text-sm font-semibold text-amber-400 mb-2">Análisis de la IA:</h3>
-                    <p id="iaAnalysis" class="text-xs text-slate-300 leading-relaxed italic">Sin datos.</p>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="section">
+<h3>Análisis semántico (IA)</h3>
+<div id="ia"></div>
+</div>
 
-    <script>
-        let codigos = { original: "", reparado: "" };
+<script>
+let codigoActual = "";
 
-        async function analizarCodigo() {
-            const code = document.getElementById('inputCode').value;
-            const btn = document.getElementById('btnAnalyze');
-            const reportDiv = document.getElementById('reportContainer');
-            
-            if (!code.trim()) return alert("Por favor ingresa algo de código.");
+function analizar() {
+  fetch("/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: document.getElementById("inputCode").value })
+  })
+  .then(r => r.json())
+  .then(data => {
+    codigoActual = data.code || "";
+    document.getElementById("codigo").textContent = codigoActual;
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Analizando...';
-            reportDiv.innerHTML = "Procesando...";
+    const rep = document.getElementById("reporte");
+    rep.innerHTML = "";
+    (data.lint || []).forEach(e => {
+      const li = document.createElement("li");
+      li.textContent = e;
+      rep.appendChild(li);
+    });
 
-            try {
-                const response = await fetch('/analyze', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ code: code })
-                });
-                
-                const data = await response.json();
+    renderIA(data.ia);
+  });
+}
 
-                // Guardar versiones
-                codigos.original = code;
-                codigos.reparado = data.codigo_limpio;
+function renderIA(ia) {
+  const div = document.getElementById("ia");
+  div.innerHTML = "";
+  if (!ia || ia.error) {
+    div.textContent = "Sin análisis IA";
+    return;
+  }
 
-                // Mostrar reporte
-                reportDiv.innerHTML = data.reporte_estatico.map(err => 
-                    `<div class="p-2 bg-slate-700/50 rounded border-l-4 border-amber-500">
-                        <span class="font-bold">[${err.tipo}]</span> ${err.mensaje}
-                    </div>`
-                ).join('') || "No se detectaron errores de estilo.";
+  const h = document.createElement("p");
+  h.textContent = "Intención: " + ia.intencion;
+  div.appendChild(h);
 
-                // Mostrar código corregido y análisis IA
-                document.getElementById('outputCode').value = data.codigo_limpio;
-                document.getElementById('iaAnalysis').innerText = typeof data.analisis_ia === 'string' 
-                    ? data.analisis_ia 
-                    : JSON.stringify(data.analisis_ia);
+  ia.problemas.forEach((p, i) => {
+    const box = document.createElement("div");
+    box.className = "section";
 
-            } catch (error) {
-                console.error(error);
-                reportDiv.innerHTML = "Error al conectar con el servidor.";
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Analizar y Reparar';
-            }
-        }
+    box.innerHTML = `
+      <b>Línea ${p.linea}</b><br>
+      ${p.descripcion}<br><br>
+      <button class="alt" onclick="aplicar('${escape(p.alternativas[0].codigo)}')">
+        Aplicar A
+      </button>
+      <button class="warn" onclick="aplicar('${escape(p.alternativas[1].codigo)}')">
+        Aplicar B
+      </button>
+      <pre>A:\n${p.alternativas[0].codigo}\n\nB:\n${p.alternativas[1].codigo}</pre>
+    `;
+    div.appendChild(box);
+  });
+}
 
-        function cambiarVersion(tipo) {
-            document.getElementById('outputCode').value = codigos[tipo] || "";
-        }
+function aplicar(codigo) {
+  codigoActual = unescape(codigo);
+  document.getElementById("codigo").textContent = codigoActual;
+}
 
-        function copiarCodigo() {
-            const out = document.getElementById('outputCode');
-            out.select();
-            document.execCommand('copy');
-            alert("Código copiado al portapapeles");
-        }
-    </script>
+function copiar() {
+  navigator.clipboard.writeText(codigoActual);
+  alert("Código copiado");
+}
+</script>
+
 </body>
 </html>
