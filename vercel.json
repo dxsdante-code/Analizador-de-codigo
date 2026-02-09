@@ -3,12 +3,11 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": { "maxLambdaSize": "50mb" }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
-    { "src": "/analyze", "dest": "api/index.py" },
-    { "src": "/", "dest": "api/index.py" }
+    { "src": "/", "dest": "api/index.py" },
+    { "src": "/analyze", "dest": "api/index.py" }
   ]
 }
