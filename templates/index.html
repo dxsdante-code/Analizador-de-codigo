@@ -3,139 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeFixer | SAST Analyzer</title>
+    <title>CodeFixer Pro | AI Refactor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #0b0f1a; }
         .font-mono { font-family: 'Fira Code', monospace; }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .editor-container { box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
     </style>
 </head>
-<body class="text-slate-200 min-h-screen flex flex-col">
 
-    <nav class="border-b border-slate-800 bg-[#0d111c] px-6 py-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-900/20">
-                    <i class="fas fa-terminal text-white text-sm"></i>
-                </div>
-                <h1 class="text-xl font-bold tracking-tight text-white">Code<span class="text-blue-500">Fixer</span></h1>
+<body class="text-slate-200 min-h-screen">
+
+<nav class="border-b border-slate-800 bg-[#0d111c] px-6 py-4 sticky top-0 z-50">
+    <div class="container mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 p-2 rounded-lg">
+                <i class="fas fa-magic text-white"></i>
             </div>
-            <button onclick="analizarCodigo()" id="btnAnalizar" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold transition-all active:scale-95 flex items-center gap-2">
-                <i class="fas fa-wand-magic-sparkles"></i> Analizar
+            <h1 class="text-xl font-bold text-white">Code<span class="text-indigo-400">Fixer</span></h1>
+        </div>
+        <button onclick="analizarCodigo()" id="btnAnalizar"
+            class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2 rounded-xl font-bold">
+            <i class="fas fa-play"></i> Analizar y Corregir
+        </button>
+    </div>
+</nav>
+
+<main class="container mx-auto px-4 py-8">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+<div class="lg:col-span-8">
+    <div class="bg-[#111827] rounded-2xl border border-slate-800 overflow-hidden">
+        <div class="flex justify-between px-5 py-3 bg-[#161e2e] border-b border-slate-800">
+            <span class="text-[11px] font-mono uppercase">Editor de código</span>
+            <span id="statusTag" class="hidden text-[10px] text-green-400">✔ Código corregido</span>
+        </div>
+        <textarea id="codeEditor"
+            class="w-full h-[600px] bg-[#0d1117] p-6 font-mono text-sm text-indigo-100 resize-none custom-scroll"
+            placeholder="# Pega tu código aquí..."></textarea>
+    </div>
+</div>
+
+<div class="lg:col-span-4">
+    <div class="bg-[#111827] rounded-2xl border border-slate-800 p-6 h-[650px] flex flex-col">
+        <h2 class="text-xs font-bold uppercase mb-4">Reporte</h2>
+
+        <div id="fixButtonContainer" class="hidden mb-4">
+            <button onclick="aplicarMejoras()"
+                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl font-bold">
+                Aplicar mejoras
             </button>
         </div>
-    </nav>
 
-    <main class="container mx-auto px-4 py-8 flex-grow">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            <div class="lg:col-span-8">
-                <div class="editor-container bg-[#111827] rounded-2xl border border-slate-800 overflow-hidden">
-                    <div class="flex items-center justify-between px-5 py-3 bg-[#161e2e] border-b border-slate-800">
-                        <div class="flex gap-2">
-                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                        </div>
-                        <span class="text-[11px] font-mono text-slate-500 uppercase tracking-widest">python_analyzer.py</span>
-                        <i class="fab fa-github text-slate-500"></i>
-                    </div>
-                    <textarea id="codeEditor" 
-                        class="w-full h-[600px] bg-[#0d1117] p-6 font-mono text-sm text-blue-100 focus:outline-none resize-none leading-relaxed custom-scroll"
-                        placeholder="# Pega tu código Python aquí...&#10;import os&#10;&#10;def mi_funcion(a, b, c, d, e, f):&#10;    eval('print(a)')"
-                        spellcheck="false"></textarea>
-                </div>
-            </div>
-
-            <div class="lg:col-span-4">
-                <div class="bg-[#111827] rounded-2xl border border-slate-800 p-6 h-full flex flex-col shadow-xl">
-                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                        <i class="fas fa-boxes-stacked text-blue-500"></i> Reporte de Análisis
-                    </h2>
-                    
-                    <div id="resultsPanel" class="space-y-4 overflow-y-auto flex-grow custom-scroll pr-2">
-                        <div class="flex flex-col items-center justify-center h-full opacity-20">
-                            <i class="fas fa-code text-5xl mb-4"></i>
-                            <p class="text-xs">Sin datos para mostrar</p>
-                        </div>
-                    </div>
-                </div>
+        <div id="resultsPanel" class="flex-grow overflow-y-auto custom-scroll space-y-3">
+            <div class="opacity-40 text-center text-xs mt-20">
+                Ejecuta el análisis para ver resultados
             </div>
         </div>
-    </main>
+    </div>
+</div>
 
-    <footer class="py-6 text-center text-slate-600 text-[11px] tracking-wide">
-        Desplegado en <span class="text-slate-400 font-bold">Vercel</span> con Python 3.9
-    </footer>
+</div>
+</main>
 
-    <script>
-        async function analizarCodigo() {
-            const code = document.getElementById('codeEditor').value;
-            const panel = document.getElementById('resultsPanel');
-            const btn = document.getElementById('btnAnalizar');
+<script>
+let codigoSugerido = "";
 
-            if (!code.trim()) return;
+const colorMap = {
+    critico: "border-red-500 text-red-400",
+    peligro: "border-orange-500 text-orange-400",
+    advertencia: "border-yellow-500 text-yellow-400",
+    info: "border-blue-500 text-blue-400"
+};
 
-            // Loading
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i>';
-            panel.innerHTML = '<div class="flex justify-center py-10"><i class="fas fa-sync fa-spin text-blue-500"></i></div>';
+async function analizarCodigo() {
+    const code = codeEditor.value.trim();
+    if (!code) return;
 
-            try {
-                const response = await fetch('/analizar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code })
-                });
+    resultsPanel.innerHTML = '<div class="text-center mt-20">Analizando…</div>';
+    btnAnalizar.disabled = true;
 
-                const findings = await response.json();
-                panel.innerHTML = '';
+    try {
+        const res = await fetch('/analizar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
 
-                if (findings.length === 0) {
-                    panel.innerHTML = `
-                        <div class="text-center py-10 bg-green-500/5 rounded-xl border border-green-500/10">
-                            <i class="fas fa-check-circle text-green-500 mb-2"></i>
-                            <p class="text-xs text-green-200">Código Seguro</p>
-                        </div>`;
-                } else {
-                    findings.forEach(res => {
-                        // Mapeo de estilos según el 'tipo' de tu backend
-                        const config = {
-                            'critico': { color: 'red', icon: 'fa-radiation' },
-                            'peligro': { color: 'orange', icon: 'fa-bolt' },
-                            'advertencia': { color: 'yellow', icon: 'fa-lightbulb' },
-                            'info': { color: 'blue', icon: 'fa-circle-info' },
-                            'error': { color: 'pink', icon: 'fa-bug' }
-                        };
+        const data = await res.json();
+        resultsPanel.innerHTML = "";
+        btnAnalizar.disabled = false;
 
-                        const ui = config[res.tipo] || { color: 'slate', icon: 'fa-circle' };
-                        
-                        panel.innerHTML += `
-                            <div class="p-4 bg-slate-900/50 border border-slate-800 rounded-xl border-l-4 border-l-${ui.color}-500 shadow-lg">
-                                <div class="flex justify-between items-start mb-2">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas ${ui.icon} text-${ui.color}-500 text-[10px]"></i>
-                                        <span class="text-[10px] font-black text-${ui.color}-500 uppercase tracking-tighter">${res.codigo || 'SAST'}</span>
-                                    </div>
-                                    <span class="text-[9px] text-slate-600 font-mono">Línea ${res.linea}</span>
-                                </div>
-                                <p class="text-[12px] text-slate-300 leading-snug">${res.mensaje}</p>
-                            </div>`;
-                    });
-                }
-            } catch (error) {
-                panel.innerHTML = '<p class="text-red-500 text-[10px] text-center">Error al conectar con la API.</p>';
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Analizar';
-            }
+        if (!res.ok) {
+            resultsPanel.innerHTML = `<div class="text-red-500 text-xs">${data.error?.mensaje || 'Error'}</div>`;
+            return;
         }
-    </script>
+
+        codigoSugerido = data.codigo_corregido || "";
+        statusTag.classList.toggle('hidden', data.cambios_realizados === 0);
+        fixButtonContainer.classList.toggle('hidden', data.cambios_realizados === 0);
+
+        if (!data.hallazgos || data.hallazgos.length === 0) {
+            resultsPanel.innerHTML = `<div class="text-green-400 text-xs">Código limpio ✔</div>`;
+            return;
+        }
+
+        data.hallazgos.forEach(h => {
+            const cls = colorMap[h.tipo] || "border-slate-500 text-slate-400";
+            resultsPanel.innerHTML += `
+                <div class="p-3 bg-slate-900 border-l-4 ${cls} rounded">
+                    <div class="text-[10px] font-bold">${h.codigo} · línea ${h.linea}</div>
+                    <div class="text-xs">${h.mensaje}</div>
+                </div>
+            `;
+        });
+
+    } catch (e) {
+        resultsPanel.innerHTML = `<div class="text-red-500 text-xs">Error de conexión</div>`;
+        btnAnalizar.disabled = false;
+    }
+}
+
+function aplicarMejoras() {
+    if (!codigoSugerido) return;
+    codeEditor.value = codigoSugerido;
+    fixButtonContainer.classList.add('hidden');
+    statusTag.classList.add('hidden');
+}
+</script>
+
 </body>
 </html>
