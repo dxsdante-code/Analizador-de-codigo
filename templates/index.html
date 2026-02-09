@@ -1,143 +1,86 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Analizador de Código Python</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: #e5e7eb;
-  margin: 0;
-  padding: 20px;
-}
-textarea {
-  width: 100%;
-  min-height: 160px;
-  background: #020617;
-  color: #e5e7eb;
-  border: 1px solid #334155;
-  padding: 10px;
-  margin-bottom: 10px;
-  font-family: monospace;
-}
-button {
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  margin: 4px;
-  cursor: pointer;
-}
-button.alt {
-  background: #16a34a;
-}
-button.warn {
-  background: #dc2626;
-}
-.section {
-  border: 1px solid #334155;
-  padding: 10px;
-  margin-top: 15px;
-}
-pre {
-  background: #020617;
-  padding: 10px;
-  overflow-x: auto;
-}
+body { font-family: Arial, sans-serif; margin:20px; }
+textarea { width:100%; height:200px; margin-bottom:10px; font-family: monospace; }
+button { margin:5px; padding:8px 12px; }
+#report, #semantic, #fixed_code { border:1px solid #ccc; padding:10px; margin-top:10px; white-space:pre-wrap; background:#f9f9f9; }
+#optionsAB button { margin-right:5px; }
 </style>
 </head>
-
 <body>
-
 <h2>Analizador de Código Python</h2>
 
-<textarea id="inputCode" placeholder="Pega aquí tu código Python..."></textarea>
-<button onclick="analizar()">Analizar</button>
+<textarea id="inputCode" placeholder="Pega tu código aquí..."></textarea><br>
 
-<div class="section">
-<h3>Reporte</h3>
-<ul id="reporte"></ul>
-</div>
+<button id="analyzeBtn">Analizar</button>
+<button id="copyBtn">Copiar Código Corregido</button>
+<button id="downloadBtn">Descargar Código</button>
 
-<div class="section">
-<h3>Código corregido</h3>
-<button onclick="copiar()">Copiar</button>
-<pre id="codigo"></pre>
-</div>
+<div id="report"><strong>Reporte:</strong>\n</div>
+<div id="fixed_code"><strong>Código Corregido:</strong>\n</div>
+<div id="semantic"><strong>Análisis Semántico (IA):</strong>\n</div>
 
-<div class="section">
-<h3>Análisis semántico (IA)</h3>
-<div id="ia"></div>
-</div>
+<div id="optionsAB"><strong>Aplicar alternativa IA:</strong><br></div>
 
 <script>
-let codigoActual = "";
+const inputCode = document.getElementById("inputCode");
+const reportDiv = document.getElementById("report");
+const fixedDiv = document.getElementById("fixed_code");
+const semanticDiv = document.getElementById("semantic");
+const optionsDiv = document.getElementById("optionsAB");
+const analyzeBtn = document.getElementById("analyzeBtn");
+const copyBtn = document.getElementById("copyBtn");
+const downloadBtn = document.getElementById("downloadBtn");
 
-function analizar() {
-  fetch("/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code: document.getElementById("inputCode").value })
-  })
-  .then(r => r.json())
-  .then(data => {
-    codigoActual = data.code || "";
-    document.getElementById("codigo").textContent = codigoActual;
+analyzeBtn.onclick = async () => {
+    reportDiv.textContent = "Analizando...";
+    fixedDiv.textContent = "";
+    semanticDiv.textContent = "";
+    optionsDiv.innerHTML = "<strong>Aplicar alternativa IA:</strong><br>";
 
-    const rep = document.getElementById("reporte");
-    rep.innerHTML = "";
-    (data.lint || []).forEach(e => {
-      const li = document.createElement("li");
-      li.textContent = e;
-      rep.appendChild(li);
+    const resp = await fetch("/analyze",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({code:inputCode.value})
     });
+    const data = await resp.json();
 
-    renderIA(data.ia);
-  });
-}
+    reportDiv.textContent = "Reporte:\n"+JSON.stringify(data.report,null,2);
+    fixedDiv.textContent = "Código Corregido:\n"+data.fixed_code;
+    semanticDiv.textContent = "Análisis IA:\n"+JSON.stringify(data.ia,null,2);
 
-function renderIA(ia) {
-  const div = document.getElementById("ia");
-  div.innerHTML = "";
-  if (!ia || ia.error) {
-    div.textContent = "Sin análisis IA";
-    return;
-  }
+    // Botones A/B
+    if(data.ia && data.ia.problemas){
+        data.ia.problemas.forEach(p=>{
+            p.alternativas.forEach(a=>{
+                const btn = document.createElement("button");
+                btn.textContent = a.id;
+                btn.onclick = ()=>{ inputCode.value = a.codigo; };
+                optionsDiv.appendChild(btn);
+            });
+        });
+    }
+};
 
-  const h = document.createElement("p");
-  h.textContent = "Intención: " + ia.intencion;
-  div.appendChild(h);
+copyBtn.onclick = () => {
+    navigator.clipboard.writeText(inputCode.value);
+    alert("Código copiado al portapapeles");
+};
 
-  ia.problemas.forEach((p, i) => {
-    const box = document.createElement("div");
-    box.className = "section";
-
-    box.innerHTML = `
-      <b>Línea ${p.linea}</b><br>
-      ${p.descripcion}<br><br>
-      <button class="alt" onclick="aplicar('${escape(p.alternativas[0].codigo)}')">
-        Aplicar A
-      </button>
-      <button class="warn" onclick="aplicar('${escape(p.alternativas[1].codigo)}')">
-        Aplicar B
-      </button>
-      <pre>A:\n${p.alternativas[0].codigo}\n\nB:\n${p.alternativas[1].codigo}</pre>
-    `;
-    div.appendChild(box);
-  });
-}
-
-function aplicar(codigo) {
-  codigoActual = unescape(codigo);
-  document.getElementById("codigo").textContent = codigoActual;
-}
-
-function copiar() {
-  navigator.clipboard.writeText(codigoActual);
-  alert("Código copiado");
-}
+downloadBtn.onclick = () => {
+    const blob = new Blob([inputCode.value], {type:"text/x-python"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "codigo_reparado.py";
+    a.click();
+    URL.revokeObjectURL(url);
+};
 </script>
-
 </body>
 </html>
