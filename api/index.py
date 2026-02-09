@@ -1,25 +1,25 @@
 import os
 import ast
 import astor
-import json
 import requests
 
 import black
 import autopep8
 import isort
+
 from flask import Flask, request, jsonify, render_template, Response
+from flake8.api import legacy as flake8
 
 # ---------------- CONFIG ----------------
-HF_MODEL = "bigcode/starcoder"
-HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
-HF_TOKEN = os.environ.get("HF_API_TOKEN")  # ← VARIABLE DE ENTORNO
+BASE_DIR = os.path.dirname(__file__)
+TEMPLATE_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "templates"))
 
-template_dir = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "templates")
-)
-app = Flask(__name__, template_folder=template_dir)
+HF_TOKEN = os.getenv("HF_API_TOKEN")
+HF_MODEL_URL = "https://api-inference.huggingface.co/models/bigcode/starcoder"
 
-# ---------------- AST MOTOR ----------------
+app = Flask(__name__, template_folder=TEMPLATE_DIR)
+
+# ---------------- AUTO REPAIR AST ----------------
 class AutoRepair(ast.NodeTransformer):
     def __init__(self):
         self.cambios = 0
@@ -28,38 +28,38 @@ class AutoRepair(ast.NodeTransformer):
         if not ast.get_docstring(node):
             node.body.insert(
                 0,
-                ast.Expr(
-                    value=ast.Constant(
-                        value="Documentación automática añadida."
-                    )
-                ),
+                ast.Expr(value=ast.Constant(value="Documentación automática añadida."))
             )
             self.cambios += 1
         return self.generic_visit(node)
 
 
-def reparar_codigo_local(code):
-    """Corrección sintáctica básica + formato"""
-    lines = code.split("\n")
+def reparar_codigo(code: str):
+    """Correcciones sintácticas + formato"""
+    cambios = 0
 
+    # Fix ':' faltantes
+    lines = code.split("\n")
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if stripped.startswith(
-            ("def ", "if ", "for ", "while ", "class ")
-        ) and not stripped.endswith(":"):
+        if stripped.startswith(("def ", "if ", "for ", "while ", "class ")) and not stripped.endswith(":"):
             lines[i] += ":"
+            cambios += 1
 
     repaired = "\n".join(lines)
 
+    # AST
     try:
         tree = ast.parse(repaired)
         motor = AutoRepair()
-        new_tree = motor.visit(tree)
-        ast.fix_missing_locations(new_tree)
-        repaired = astor.to_source(new_tree)
+        tree = motor.visit(tree)
+        ast.fix_missing_locations(tree)
+        repaired = astor.to_source(tree)
+        cambios += motor.cambios
     except Exception:
-        motor = AutoRepair()
+        pass
 
+    # Formatters
     try:
         repaired = black.format_str(repaired, mode=black.Mode())
     except Exception:
@@ -68,59 +68,60 @@ def reparar_codigo_local(code):
     repaired = autopep8.fix_code(repaired)
     repaired = isort.code(repaired)
 
-    return repaired, motor.cambios
+    return repaired, cambios
+
+
+def analizar_flake8(code: str):
+    style = flake8.get_style_guide(ignore=["E501"])
+    report = style.input_file(filename="temp.py", lines=code.splitlines())
+
+    errores = []
+    for e in report.get_statistics(""):
+        errores.append({"tipo": "warning", "mensaje": e})
+    return errores
 
 
 # ---------------- IA SEMÁNTICA ----------------
-def analizar_semantica_ia(code):
-    """Llamada a StarCoder para corrección semántica"""
+def analisis_semantico_ia(code: str):
     if not HF_TOKEN:
-        return None, "Token de IA no configurado"
-
-    prompt = f"""
-Eres un experto en Python.
-Corrige el siguiente código respetando su intención original.
-No inventes nuevas funcionalidades.
-Devuelve SOLO el código Python corregido y ejecutable.
-
-Código:
-{code}
-"""
+        return "IA no configurada (HF_API_TOKEN faltante)"
 
     headers = {
         "Authorization": f"Bearer {HF_TOKEN}",
         "Content-Type": "application/json",
     }
 
+    prompt = f"""
+Analiza el siguiente código Python.
+Explica qué intenta hacer, qué le falta y qué errores lógicos existen.
+NO reescribas el código, SOLO análisis.
+
+Código:
+{code}
+"""
+
     payload = {
         "inputs": prompt,
         "parameters": {
-            "max_new_tokens": 900,
-            "temperature": 0.2,
-            "return_full_text": False,
-        },
+            "max_new_tokens": 300,
+            "temperature": 0.2
+        }
     }
 
     try:
-        resp = requests.post(
-            HF_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=25,
-        )
+        r = requests.post(HF_MODEL_URL, headers=headers, json=payload, timeout=25)
+        if r.status_code != 200:
+            return f"Error IA ({r.status_code})"
 
-        if resp.status_code != 200:
-            return None, f"Error IA {resp.status_code}"
-
-        data = resp.json()
+        data = r.json()
 
         if isinstance(data, list) and "generated_text" in data[0]:
-            return data[0]["generated_text"], None
+            return data[0]["generated_text"]
 
-        return None, "Respuesta IA no válida"
+        return "Respuesta IA no válida"
 
     except Exception as e:
-        return None, str(e)
+        return f"Error de conexión IA: {str(e)}"
 
 
 # ---------------- RUTAS ----------------
@@ -131,51 +132,37 @@ def home():
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
-    data = request.json
-    code = data.get("code", "")
-
-    report = []
-
-    # 1️⃣ Sintaxis básica
     try:
-        ast.parse(code)
-        report.append(
-            {"tipo": "ok", "mensaje": "Sintaxis válida"}
-        )
-    except SyntaxError as e:
-        report.append(
-            {
+        data = request.get_json(force=True)
+        code = data.get("code", "")
+
+        report = []
+
+        # AST check
+        try:
+            ast.parse(code)
+            report.append({"tipo": "ok", "mensaje": "Sin errores críticos de sintaxis"})
+        except SyntaxError as e:
+            report.append({
                 "tipo": "critico",
                 "linea": e.lineno,
-                "mensaje": str(e),
-            }
-        )
+                "mensaje": str(e)
+            })
 
-    # 2️⃣ Corrección LOCAL
-    fixed_local, cambios = reparar_codigo_local(code)
+        fixed_code, cambios = reparar_codigo(code)
+        report.extend(analizar_flake8(fixed_code))
 
-    # 3️⃣ IA SEMÁNTICA
-    fixed_ai, ia_error = analizar_semantica_ia(code)
+        semantic = analisis_semantico_ia(code)
 
-    if fixed_ai:
-        codigo_final = fixed_ai
-        report.append(
-            {"tipo": "ia", "mensaje": "Corrección semántica aplicada"}
-        )
-    else:
-        codigo_final = fixed_local
-        report.append(
-            {
-                "tipo": "warning",
-                "mensaje": f"IA no disponible: {ia_error}",
-            }
-        )
+        return jsonify({
+            "report": report,
+            "fixed_code": fixed_code,
+            "semantic": semantic,
+            "cambios": cambios
+        })
 
-    return jsonify(
-        report=report,
-        fixed_code=codigo_final,
-        cambios=cambios,
-    )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route("/download", methods=["POST"])
@@ -184,11 +171,10 @@ def download():
     return Response(
         code,
         mimetype="text/x-python",
-        headers={
-            "Content-Disposition": "attachment; filename=codigo_corregido.py"
-        },
+        headers={"Content-Disposition": "attachment; filename=codigo_reparado.py"},
     )
 
 
+# Local only
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
