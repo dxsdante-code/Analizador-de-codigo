@@ -1,7 +1,9 @@
-Flask==2.3.3
-astor==0.8.1
-black==23.3.0
-autopep8==2.0.2
-isort==5.12.0
-flake8==6.1.0
-requests==2.31.0
+flask
+astor
+black
+autopep8
+isort
+flake8
+transformers
+huggingface_hub
+requests
