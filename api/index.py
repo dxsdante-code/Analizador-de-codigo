@@ -1,177 +1,112 @@
 import os
-import re
 import ast
 import astor
 import black
 import autopep8
 import isort
-from flask import Flask, request, jsonify, render_template, Response
-from flake8.api import legacy as flake8
+from flask import Flask, render_template, request, jsonify, Response
 
-# ---------------- CONFIG ----------------
-template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
-app = Flask(__name__, template_folder=template_dir)
+# IA GPT / Copilot simulada con ejemplo
+# En producción, usarías la API de OpenAI o GitHub Copilot con tu token
+def analizar_semantica(codigo: str):
+    """
+    Función simulada de IA que devuelve un análisis semántico del código
+    En un escenario real se conectaría a GPT para generar el resumen.
+    """
+    if "def " in codigo:
+        return "El código contiene funciones definidas. Revisa docstrings y tipos de retorno."
+    elif "class " in codigo:
+        return "El código define clases, asegúrate de inicializar correctamente los atributos."
+    else:
+        return "Código general, posible script o snippet."
 
-MAX_REPAIR_ATTEMPTS = 3
-
-# ---------------- PRE-SCAN TEXTUAL ----------------
-COMMON_FIXES = [
-    (r"with open\((.*?)\) as (\w+)\n", r"with open(\1) as \2:\n"),
-    (r"\belse\s*\n", "else:\n"),
-    (r"\btry\s*\n", "try:\n"),
-    (r"\bexcept\s*\n", "except Exception:\n"),
-    (r"f\.close\b", "f.close()"),
-    (r"\)\s*\n\s*\(", "),\n("),
-    (r"==\s*None", "is None"),
-]
-
-def prescan_textual(code: str) -> str:
-    for pattern, repl in COMMON_FIXES:
-        code = re.sub(pattern, repl, code)
-    return code
-
-# ---------------- INDENTACIÓN HEURÍSTICA ----------------
-def fix_indentation(code: str) -> str:
-    lines = code.splitlines()
-    fixed = []
-    indent = 0
-
-    for line in lines:
-        stripped = line.strip()
-
-        if stripped.startswith(("else", "elif", "except", "finally")):
-            indent -= 1
-
-        fixed.append("    " * max(indent, 0) + stripped)
-
-        if stripped.endswith(":"):
-            indent += 1
-
-    return "\n".join(fixed)
-
-# ---------------- AST AUTO-REPAIR ----------------
-class AutoRepairAST(ast.NodeTransformer):
+# ----------------- AUTO REPAIR -----------------
+class AutoRepair(ast.NodeTransformer):
     def __init__(self):
-        self.cambios = []
+        self.cambios = 0
 
     def visit_FunctionDef(self, node):
+        # Añadir docstring si falta
         if not ast.get_docstring(node):
-            node.body.insert(
-                0,
-                ast.Expr(value=ast.Constant(value="Documentación automática añadida."))
-            )
-            self.cambios.append("Docstring añadido")
-        if not node.body:
-            node.body.append(ast.Pass())
-            self.cambios.append("Pass añadido en función vacía")
+            node.body.insert(0, ast.Expr(value=ast.Constant(
+                value="Documentación automática añadida.")))
+            self.cambios += 1
         return self.generic_visit(node)
 
-    def visit_If(self, node):
-        if not node.orelse:
-            node.orelse = [ast.Pass()]
-            self.cambios.append("Else añadido automáticamente")
-        return self.generic_visit(node)
 
-# ---------------- VALIDACIÓN ----------------
-def validar_codigo(code: str) -> bool:
-    try:
-        ast.parse(code)
-        return True
-    except SyntaxError:
-        return False
+def reparar_codigo(code: str):
+    # Añadir ":" faltante en definiciones
+    lines = code.split("\n")
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith(("def ", "if ", "for ", "while ", "class ")) and not stripped.endswith(":"):
+            lines[i] += ":"
+    repaired = "\n".join(lines)
 
-# ---------------- FORMATEO FINAL ----------------
-def formatear_codigo(code: str) -> str:
+    # AST para docstrings
     try:
-        code = black.format_str(code, mode=black.Mode())
+        tree = ast.parse(repaired)
+        motor = AutoRepair()
+        nuevo_tree = motor.visit(tree)
+        ast.fix_missing_locations(nuevo_tree)
+        codigo_final = astor.to_source(nuevo_tree)
+    except Exception:
+        codigo_final = repaired
+
+    # Formateo con Black
+    try:
+        codigo_final = black.format_str(codigo_final, mode=black.Mode())
     except Exception:
         pass
 
-    code = autopep8.fix_code(code)
-    code = isort.code(code)
-    return code
+    # Formateo con autopep8
+    codigo_final = autopep8.fix_code(codigo_final)
 
-# ---------------- FLAKE8 ----------------
-def analizar_flake8(code: str):
-    style = flake8.get_style_guide(ignore=["E501"])
-    report = style.input_file(filename="temp.py", lines=code.splitlines())
-    errores = []
+    # Organizar imports con isort
+    codigo_final = isort.code(codigo_final)
 
-    for stat in report.get_statistics(""):
-        errores.append({
-            "tipo": "style",
-            "mensaje": stat
-        })
+    return codigo_final, motor.cambios
 
-    return errores
 
-# ---------------- MOTOR PRINCIPAL ----------------
-def reparar_codigo(code: str):
-    cambios = []
-    code = prescan_textual(code)
-    code = fix_indentation(code)
+# ----------------- FLASK -----------------
+template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
+app = Flask(__name__, template_folder=template_dir)
 
-    for intento in range(MAX_REPAIR_ATTEMPTS):
-        try:
-            tree = ast.parse(code)
-            motor = AutoRepairAST()
-            nuevo = motor.visit(tree)
-            ast.fix_missing_locations(nuevo)
-            code = astor.to_source(nuevo)
-            cambios.extend(motor.cambios)
-            break
-        except SyntaxError:
-            code = fix_indentation(code)
 
-    code = formatear_codigo(code)
-    return code, cambios
-
-# ---------------- RUTAS ----------------
 @app.route("/")
 def home():
     return render_template("index.html")
 
+
 @app.route("/analyze", methods=["POST"])
 def analyze():
     data = request.json
-    original = data.get("code", "")
+    code = data.get("code", "")
 
-    reporte = []
+    # Intento de parse
+    report = []
     try:
-        ast.parse(original)
-        reporte.append({
-            "tipo": "ok",
-            "mensaje": "No se encontraron errores críticos"
-        })
+        ast.parse(code)
+        report.append({"linea": 0, "mensaje": "No se encontraron errores críticos", "tipo": "ok"})
     except SyntaxError as e:
-        reporte.append({
-            "tipo": "syntax",
-            "linea": e.lineno,
-            "mensaje": str(e)
-        })
+        report.append({"linea": e.lineno, "mensaje": str(e), "tipo": "critico"})
 
-    fixed_code, cambios = reparar_codigo(original)
-    flake_errors = analizar_flake8(fixed_code)
+    # Reparar código
+    fixed_code, cambios = reparar_codigo(code)
 
-    reporte.extend(flake_errors)
+    # Análisis semántico con IA
+    semantica = analizar_semantica(fixed_code)
 
-    confianza = min(90, 60 + len(cambios) * 5)
+    return jsonify(report=report, fixed_code=fixed_code, cambios=cambios, semantica=semantica)
 
-    return jsonify(
-        reporte=reporte,
-        codigo_corregido=fixed_code,
-        cambios_realizados=cambios,
-        confianza=f"{confianza}%"
-    )
 
 @app.route("/download", methods=["POST"])
 def download():
     code = request.json.get("code", "")
-    return Response(
-        code,
-        mimetype="text/x-python",
-        headers={"Content-Disposition": "attachment; filename=codigo_reparado.py"},
-    )
+    return Response(code, mimetype="text/x-python", headers={
+        "Content-Disposition": "attachment; filename=codigo_reparado.py"
+    })
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
