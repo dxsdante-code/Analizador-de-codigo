@@ -1,188 +1,150 @@
-from flask import Flask, render_template, request, jsonify, Response
+from flask import Flask, render_template, request, jsonify
 import ast
 import astor
 import re
 import os
-import textwrap
 
-# =========================
-# FLASK SETUP (VERCEL SAFE)
-# =========================
+# ---------------- CONFIG ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_DIR = os.path.join(BASE_DIR, "..", "templates")
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
+# ---------------- CAPA 1: PRE-PARSER ----------------
+class PreParser:
+    def __init__(self, code):
+        self.code = code
+        self.report = []
 
-# =========================
-# AUTO REPAIR SINTÁCTICO
-# =========================
+    def normalize(self):
+        self.code = self.code.replace("\t", "    ")
+        self.code = re.sub(r"\btrue\b", "True", self.code, flags=re.I)
+        self.code = re.sub(r"\bfalse\b", "False", self.code, flags=re.I)
+        self.code = re.sub(r"\bnull\b", "None", self.code, flags=re.I)
+        return self.code
+
+    def fix_colons(self):
+        lines = []
+        for i, line in enumerate(self.code.splitlines()):
+            if re.match(r"\s*(def|if|for|while|class)\b", line) and not line.rstrip().endswith(":"):
+                line += ":"
+                self.report.append({
+                    "tipo": "auto-fix",
+                    "linea": i + 1,
+                    "mensaje": "Se añadió ':' faltante"
+                })
+            lines.append(line)
+        self.code = "\n".join(lines)
+        return self.code
+
+    def run(self):
+        self.normalize()
+        self.fix_colons()
+        return self.code, self.report
+
+
+# ---------------- CAPA 2: AUTO-REPAIR SYNTAX ----------------
 class SyntaxAutoRepair:
-    def __init__(self, codigo: str):
-        """Motor de reparación sintáctica automática."""
-        self.original = codigo
-        self.codigo = textwrap.dedent(codigo)
-        self.cambios = []
-        self.max_intentos = 6
+    def __init__(self, code):
+        self.code = code
+        self.report = []
 
-    def reparar(self) -> str:
-        """Intenta reparar errores de sintaxis comunes."""
-        for _ in range(self.max_intentos):
+    def repair(self):
+        for _ in range(5):
             try:
-                ast.parse(self.codigo)
-                return self.codigo
+                ast.parse(self.code)
+                return self.code
             except SyntaxError as e:
-                if not self._aplicar_fix(e):
+                if not self.apply_fix(e):
                     break
-        return self.codigo
+        return self.code
 
-    def _aplicar_fix(self, error: SyntaxError) -> bool:
-        linea = error.lineno or 1
+    def apply_fix(self, error):
+        lines = self.code.splitlines()
+        ln = error.lineno - 1 if error.lineno else 0
         msg = str(error)
-        lineas = self.codigo.splitlines()
 
-        # Proteger índice
-        if linea > len(lineas):
-            linea = len(lineas)
+        if "expected ':'" in msg and ln < len(lines):
+            lines[ln] += ":"
+            self._log(ln + 1, "Se corrigió ':' faltante")
+        elif "EOL while scanning string literal" in msg:
+            lines[ln] += "'"
+            self._log(ln + 1, "Se cerró comilla automáticamente")
+        elif "was never closed" in msg:
+            self.code += "\n)"
+            self._log(ln + 1, "Se cerró paréntesis automáticamente")
+        else:
+            return False
 
-        # ':' faltante
-        if "expected ':'" in msg:
-            if re.match(r"\s*(if|for|while|def|class)\b", lineas[linea - 1]):
-                lineas[linea - 1] += ":"
-                self._commit("Se añadió ':' faltante", linea)
-                self.codigo = "\n".join(lineas)
-                return True
+        self.code = "\n".join(lines)
+        return True
 
-        # Comillas abiertas
-        if "EOL while scanning string literal" in msg:
-            lineas[linea - 1] += "'"
-            self._commit("Comilla cerrada automáticamente", linea)
-            self.codigo = "\n".join(lineas)
-            return True
-
-        # Paréntesis o corchetes
-        if "was never closed" in msg:
-            self.codigo += "\n)"
-            self._commit("Paréntesis cerrado automáticamente", linea)
-            return True
-
-        # Indentación (heurística)
-        if "IndentationError" in msg or "unexpected indent" in msg:
-            self.codigo = self._fix_indentacion()
-            self._commit("Indentación corregida", linea)
-            return True
-
-        # JSON → Python
-        if self._parece_json():
-            self.codigo = (
-                self.codigo.replace("true", "True")
-                .replace("false", "False")
-                .replace("null", "None")
-            )
-            self._commit("JSON convertido a Python", 0)
-            return True
-
-        return False
-
-    def _fix_indentacion(self) -> str:
-        fixed = []
-        indent = 0
-        for line in self.codigo.splitlines():
-            stripped = line.lstrip()
-            if not stripped:
-                fixed.append("")
-                continue
-            if stripped.endswith(":"):
-                fixed.append(" " * indent + stripped)
-                indent += 4
-            else:
-                fixed.append(" " * indent + stripped)
-        return "\n".join(fixed)
-
-    def _parece_json(self) -> bool:
-        txt = self.codigo.strip()
-        return txt.startswith("{") and ":" in txt and '"' in txt
-
-    def _commit(self, mensaje: str, linea: int):
-        self.cambios.append({
+    def _log(self, line, msg):
+        self.report.append({
             "tipo": "auto-fix",
-            "linea": linea,
-            "mensaje": mensaje,
-            "confianza": 0.9
+            "linea": line,
+            "mensaje": msg
         })
 
 
-# =========================
-# AST REFACTOR
-# =========================
-class SuperMotor(ast.NodeTransformer):
+# ---------------- CAPA 3: AST REFACTOR ----------------
+class ASTRefactor(ast.NodeTransformer):
     def __init__(self):
-        """Motor de mejoras semánticas."""
-        self.cambios = 0
+        self.changes = 0
 
     def visit_FunctionDef(self, node):
         if not ast.get_docstring(node):
             node.body.insert(
                 0,
-                ast.Expr(
-                    value=ast.Constant(
-                        "Documentación generada automáticamente."
-                    )
-                )
+                ast.Expr(value=ast.Constant("Docstring generado automáticamente."))
             )
-            self.cambios += 1
+            self.changes += 1
         return self.generic_visit(node)
 
 
-# =========================
-# ROUTES
-# =========================
+# ---------------- ROUTES ----------------
 @app.route("/")
 def index():
-    """Página principal."""
     return render_template("index.html")
 
 
 @app.route("/analizar", methods=["POST"])
 def analizar():
     try:
-        data = request.json or {}
-        codigo = data.get("code", "")
+        code = request.json.get("code", "")
 
-        reparador = SyntaxAutoRepair(codigo)
-        codigo_reparado = reparador.reparar()
+        # Capa 1
+        pre = PreParser(code)
+        code, report1 = pre.run()
 
-        tree = ast.parse(codigo_reparado)
-        motor = SuperMotor()
-        nuevo_tree = motor.visit(tree)
-        ast.fix_missing_locations(nuevo_tree)
+        # Capa 2
+        syntax = SyntaxAutoRepair(code)
+        code = syntax.repair()
 
-        codigo_final = astor.to_source(nuevo_tree)
+        # AST
+        tree = ast.parse(code)
+        refactor = ASTRefactor()
+        tree = refactor.visit(tree)
+        ast.fix_missing_locations(tree)
+
+        final_code = astor.to_source(tree)
 
         return jsonify({
-            "hallazgos": reparador.cambios,
-            "codigo_corregido": codigo_final,
-            "cambios_realizados": len(reparador.cambios) + motor.cambios
+            "errores": report1 + syntax.report,
+            "codigo_corregido": final_code
         })
 
     except Exception as e:
         return jsonify({
-            "hallazgos": [{
+            "errores": [{
                 "tipo": "critico",
                 "linea": 0,
                 "mensaje": str(e)
             }],
-            "cambios_realizados": 0
+            "codigo_corregido": ""
         }), 400
 
 
-@app.route("/descargar", methods=["POST"])
-def descargar():
-    codigo = request.form.get("code", "")
-    return Response(
-        codigo,
-        mimetype="text/x-python",
-        headers={
-            "Content-Disposition": "attachment; filename=codigo_reparado.py"
-        }
-    )
+# ---------------- MAIN ----------------
+if __name__ == "__main__":
+    app.run(debug=True)
