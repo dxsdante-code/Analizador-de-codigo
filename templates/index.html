@@ -3,110 +3,97 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Code Analyzer + AutoRepair</title>
+<title>Code Analyzer Pro | AI + AutoRepair</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
-  body { font-family: 'Inter', sans-serif; background-color: #0b0f1a; color: #e2e8f0; }
+  body { font-family: 'Inter', sans-serif; background-color: #0b0f1a; color: #cbd5e1; }
   .font-mono { font-family: 'Fira Code', monospace; }
   .custom-scroll::-webkit-scrollbar { width: 6px; }
   .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
   .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen">
 
-<nav class="bg-[#0d111c] px-6 py-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
-    <h1 class="text-xl font-bold text-white">Python <span class="text-indigo-400">Analyzer</span></h1>
-    <button id="btnAnalizar" onclick="analizarCodigo()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded font-bold">Analizar</button>
+<nav class="bg-[#0d111c] px-6 py-4 border-b border-slate-800 sticky top-0 z-50">
+  <div class="container mx-auto flex justify-between items-center">
+    <h1 class="text-xl font-bold text-white">Code<span class="text-indigo-400">Analyzer</span></h1>
+    <button id="btnAnalizar" onclick="analizarCodigo()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2">
+      <i class="fas fa-play"></i> Analizar
+    </button>
+  </div>
 </nav>
 
-<main class="container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
-    <!-- Editor de código -->
-    <div class="flex-1">
-        <label class="block mb-2 text-sm font-semibold">Código Python:</label>
-        <textarea id="codigo" class="w-full h-[400px] p-4 font-mono text-sm bg-[#111827] border border-slate-700 rounded-lg custom-scroll" placeholder="Pega tu código aquí..."></textarea>
+<main class="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+  
+  <div class="lg:col-span-6">
+    <div class="bg-[#111827] rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+      <div class="px-5 py-3 bg-[#161e2e] border-b border-slate-800 text-slate-400 text-sm font-mono uppercase tracking-widest">
+        Código a analizar
+      </div>
+      <textarea id="codeInput" placeholder="# Pega tu código aquí..." class="w-full h-[500px] p-6 bg-[#0d1117] font-mono text-sm text-indigo-100 resize-none focus:outline-none custom-scroll"></textarea>
+    </div>
+  </div>
+
+  <div class="lg:col-span-6 space-y-4">
+    <div class="bg-[#111827] rounded-2xl border border-slate-800 p-6 shadow-xl flex flex-col h-[500px]">
+      <h2 class="text-slate-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-3">
+        <i class="fas fa-exclamation-triangle text-yellow-400"></i> Reporte
+      </h2>
+      <div id="reportPanel" class="flex-grow overflow-y-auto custom-scroll space-y-2 p-2 bg-[#0d1117] rounded"></div>
     </div>
 
-    <!-- Panel de reportes y código corregido -->
-    <div class="flex-1 flex flex-col gap-4">
-        <div class="bg-[#111827] p-4 rounded-lg border border-slate-700 h-[200px] overflow-y-auto custom-scroll">
-            <h2 class="text-sm font-bold mb-2">Reporte de errores:</h2>
-            <div id="reportPanel" class="text-xs"></div>
-        </div>
-
-        <div class="bg-[#111827] p-4 rounded-lg border border-slate-700 flex flex-col">
-            <h2 class="text-sm font-bold mb-2">Código corregido:</h2>
-            <textarea id="codigoCorregido" class="w-full h-[180px] p-2 font-mono text-xs bg-[#0f172a] rounded custom-scroll" readonly></textarea>
-            <div class="mt-2 flex gap-2">
-                <button onclick="copiarCodigo()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-1 rounded text-white text-sm font-bold">Copiar</button>
-                <button onclick="descargarCodigo()" class="bg-blue-600 hover:bg-blue-500 px-4 py-1 rounded text-white text-sm font-bold">Descargar</button>
-            </div>
-        </div>
+    <div class="bg-[#111827] rounded-2xl border border-slate-800 p-6 shadow-xl flex flex-col">
+      <h2 class="text-slate-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-3">
+        <i class="fas fa-code text-indigo-400"></i> Código Corregido
+      </h2>
+      <textarea id="fixedCode" class="w-full h-[200px] p-4 bg-[#0d1117] font-mono text-sm text-green-300 resize-none focus:outline-none custom-scroll"></textarea>
+      <button onclick="copiarCodigo()" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl font-bold flex items-center justify-center gap-2">
+        <i class="fas fa-copy"></i> Copiar Código
+      </button>
     </div>
+  </div>
+
 </main>
 
 <script>
 async function analizarCodigo() {
-    const codigo = document.getElementById("codigo").value;
-    const reportPanel = document.getElementById("reportPanel");
-    const codigoCorregido = document.getElementById("codigoCorregido");
+  const code = document.getElementById('codeInput').value;
+  const reportPanel = document.getElementById('reportPanel');
+  const fixedCodeArea = document.getElementById('fixedCode');
+  reportPanel.innerHTML = '<div class="text-center py-20"><i class="fas fa-spinner fa-spin text-3xl text-indigo-500"></i></div>';
+  fixedCodeArea.value = '';
 
-    reportPanel.innerHTML = "<p class='text-gray-400'>Analizando...</p>";
-    codigoCorregido.value = "";
+  try {
+    const res = await fetch('/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({code})
+    });
+    const data = await res.json();
 
-    try {
-        const response = await fetch("/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: codigo })
-        });
+    reportPanel.innerHTML = '';
+    data.report.forEach(item => {
+      const color = item.tipo === 'critico' ? 'red' : (item.tipo === 'warning' ? 'yellow' : 'green');
+      reportPanel.innerHTML += `
+        <div class="p-2 rounded border-l-4 border-${color}-500 bg-slate-900/70">
+          <p class="text-xs font-mono text-${color}-400">${item.mensaje}</p>
+        </div>`;
+    });
 
-        const data = await response.json();
-
-        // Mostrar reporte
-        if (data.report.length === 0) {
-            reportPanel.innerHTML = "<p class='text-green-400'>No se encontraron errores</p>";
-        } else {
-            reportPanel.innerHTML = data.report.map(r => {
-                let color = r.tipo === "critico" ? "text-red-400" :
-                            r.tipo === "warning" ? "text-yellow-400" : "text-green-400";
-                return `<div class='mb-1 ${color}'>Línea ${r.linea || "-"}: ${r.mensaje}</div>`;
-            }).join("");
-        }
-
-        // Mostrar código corregido
-        codigoCorregido.value = data.fixed_code;
-
-    } catch (err) {
-        reportPanel.innerHTML = "<p class='text-red-500'>Error al analizar el código.</p>";
-        console.error(err);
-    }
+    fixedCodeArea.value = data.fixed_code || code;
+  } catch(err) {
+    reportPanel.innerHTML = `<p class="text-red-500 text-center text-xs">Error al analizar el código: ${err}</p>`;
+  }
 }
 
 function copiarCodigo() {
-    const codigoCorregido = document.getElementById("codigoCorregido");
-    codigoCorregido.select();
-    document.execCommand("copy");
-    alert("Código corregido copiado al portapapeles");
-}
-
-async function descargarCodigo() {
-    const codigoCorregido = document.getElementById("codigoCorregido").value;
-    const response = await fetch("/download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: codigoCorregido })
-    });
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "codigo_reparado.py";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
+  const fixedCodeArea = document.getElementById('fixedCode');
+  fixedCodeArea.select();
+  fixedCodeArea.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(fixedCodeArea.value);
+  alert('Código copiado al portapapeles!');
 }
 </script>
 
