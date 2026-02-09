@@ -1,6 +1,5 @@
-Flask
-astor
-black
-autopep8
-isort
-flake8
+Flask==2.3.3
+astor==0.8.1
+black==23.7.0
+autopep8==2.0.2
+isort==5.12.0
