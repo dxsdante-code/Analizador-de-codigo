@@ -1,87 +1,56 @@
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
 import ast
 import astor
+import os
 
-app = Flask(__name__)
-
-# -------------------------------------------------
-# Refactorizador seguro
-# -------------------------------------------------
+# Ajuste de ruta para que Vercel no se pierda
+template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
+app = Flask(__name__, template_folder=template_dir)
 
 class CodeRefactor(ast.NodeTransformer):
     def __init__(self):
         self.cambios = 0
-        self.hallazgos = []
-
     def visit_FunctionDef(self, node):
         if not ast.get_docstring(node):
-            self.hallazgos.append({
-                "tipo": "info",
-                "codigo": "STL001",
-                "linea": node.lineno,
-                "mensaje": f"Docstring agregado automáticamente a '{node.name}'"
-            })
-            docstring = ast.Expr(
-                value=ast.Constant(
-                    value=f"Documentación automática para {node.name}."
-                )
-            )
+            docstring = ast.Expr(value=ast.Constant(value="Corrección: Se añadió descripción a la función."))
             node.body.insert(0, docstring)
             self.cambios += 1
-
         return self.generic_visit(node)
 
-    def visit_If(self, node):
-        if isinstance(node.test, ast.Constant) and node.test.value is False:
-            self.hallazgos.append({
-                "tipo": "advertencia",
-                "codigo": "QLT001",
-                "linea": node.lineno,
-                "mensaje": "Bloque 'if False' eliminado automáticamente"
-            })
-            self.cambios += 1
-            return None
-
-        return self.generic_visit(node)
-
-# -------------------------------------------------
-# Endpoint
-# -------------------------------------------------
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/analizar', methods=['POST'])
 def analizar():
-    data = request.json
-    codigo_original = data.get('code', '')
-
     try:
-        tree = ast.parse(codigo_original)
+        data = request.json
+        codigo = data.get('code', '')
+        tree = ast.parse(codigo)
+        
+        # Recolectar hallazgos
+        hallazgos = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and not ast.get_docstring(node):
+                hallazgos.append({
+                    "tipo": "info",
+                    "codigo": "STL001",
+                    "linea": node.lineno,
+                    "mensaje": f"La función '{node.name}' no tiene docstring."
+                })
 
+        # Aplicar corrección
         refactor = CodeRefactor()
         nuevo_tree = refactor.visit(tree)
         ast.fix_missing_locations(nuevo_tree)
-
-        if refactor.cambios > 0:
-            codigo_corregido = astor.to_source(nuevo_tree)
-        else:
-            codigo_corregido = codigo_original
+        
+        codigo_listo = astor.to_source(nuevo_tree) if refactor.cambios > 0 else codigo
 
         return jsonify({
-            "cambios_realizados": refactor.cambios,
-            "hallazgos": refactor.hallazgos,
-            "codigo_corregido": codigo_corregido
+            "hallazgos": hallazgos,
+            "codigo_corregido": codigo_listo,
+            "cambios_realizados": refactor.cambios
         })
-
-    except SyntaxError as e:
-        return jsonify({
-            "error": {
-                "tipo": "error",
-                "codigo": "SYN001",
-                "linea": e.lineno,
-                "mensaje": e.msg
-            }
-        }), 400
-
-# -------------------------------------------------
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    except Exception as e:
+        return jsonify({"hallazgos": [{"tipo": "error", "codigo": "ERR", "linea": 0, "mensaje": str(e)}], "cambios_realizados": 0})
+        
