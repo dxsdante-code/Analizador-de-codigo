@@ -3,65 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeFixer AI | Analizador</title>
+    <title>CodeFixer AI | Analizador Estático</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+        .font-mono { font-family: 'Fira Code', monospace; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+<body class="bg-slate-950 text-slate-100 min-h-screen">
 
-    <header class="border-b border-slate-700 p-4 bg-slate-800 shadow-xl">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-blue-400"><i class="fas fa-code-branch mr-2"></i>CodeFixer <span class="text-white font-light">Analyzer</span></h1>
-            <span class="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">v1.0 Beta</span>
-        </div>
-    </header>
-
-    <main class="container mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <div class="lg:col-span-2 space-y-4">
-            <div class="flex items-center justify-between bg-slate-800 p-3 rounded-t-lg border-b border-slate-700">
-                <span class="text-sm font-mono text-slate-400 italic italic">main.py</span>
-                <button onclick="analizarCodigo()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-1.5 rounded-md transition-all font-semibold shadow-lg">
-                    <i class="fas fa-play mr-2 text-xs"></i> Analizar Código
-                </button>
+    <nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 p-2 rounded-lg">
+                    <i class="fas fa-microchip text-white"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">Code<span class="text-blue-500">Fixer</span></h1>
             </div>
-            <textarea id="codeEditor" class="w-full h-[500px] bg-slate-800 p-4 font-mono text-sm border-x border-b border-slate-700 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none" placeholder="# Pega tu código Python aquí..."></textarea>
-        </div>
-
-        <div class="space-y-4">
-            <h2 class="text-lg font-semibold flex items-center"><i class="fas fa-magic mr-2 text-yellow-400"></i> Hallazgos</h2>
-            <div id="resultsPanel" class="bg-slate-800 border border-slate-700 rounded-lg h-[500px] overflow-y-auto p-4 space-y-4">
-                <p class="text-slate-500 text-center mt-20">El análisis no ha comenzado aún.</p>
+            <div class="flex gap-4">
+                <a href="https://github.com" target="_blank" class="text-slate-400 hover:text-white transition shadow-sm">
+                    <i class="fab fa-github text-xl"></i>
+                </a>
             </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <div class="lg:col-span-8 space-y-4">
+                <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-2xl">
+                    <div class="flex items-center justify-between px-4 py-3 bg-slate-800/50 border-b border-slate-800">
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">python_analyzer.py</span>
+                        <button onclick="analizarCodigo()" id="btnAnalizar" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg transition-all active:scale-95 shadow-lg shadow-blue-900/20">
+                            <i class="fas fa-wand-magic-sparkles text-sm"></i>
+                            <span class="font-semibold">Analizar</span>
+                        </button>
+                    </div>
+                    <textarea id="codeEditor" 
+                        class="w-full h-[600px] bg-slate-900 p-6 font-mono text-sm text-blue-100 focus:outline-none resize-none leading-relaxed"
+                        placeholder="# Pega tu código Python aquí...&#10;def ejemplo():&#10;    eval('print(123)') # Prueba esto"
+                        spellcheck="false"></textarea>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 flex flex-col gap-4">
+                <div class="bg-slate-900 rounded-xl border border-slate-800 p-6 h-full shadow-xl">
+                    <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
+                        <i class="fas fa-clipboard-list text-blue-500"></i> Reporte de Análisis
+                    </h2>
+                    
+                    <div id="resultsPanel" class="space-y-4 overflow-y-auto max-h-[550px] pr-2">
+                        <div class="text-center py-20">
+                            <i class="fas fa-code text-slate-800 text-6xl mb-4"></i>
+                            <p class="text-slate-500 text-sm italic">Listo para analizar tu código.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
+
+    <footer class="mt-12 py-8 border-t border-slate-900 text-center text-slate-600 text-sm">
+        <p>Desplegado en <strong>Vercel</strong> con Python 3.9</p>
+    </footer>
 
     <script>
         async function analizarCodigo() {
             const code = document.getElementById('codeEditor').value;
             const panel = document.getElementById('resultsPanel');
+            const btn = document.getElementById('btnAnalizar');
 
-            if(!code.trim()) {
-                alert("Por favor, escribe algo de código primero.");
+            if (!code.trim()) {
+                panel.innerHTML = `
+                    <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 text-sm text-center">
+                        <i class="fas fa-info-circle mr-2"></i> Por favor, ingresa código.
+                    </div>`;
                 return;
             }
 
-            // Simulación de carga
-            panel.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner animate-spin text-3xl text-blue-500"></i></div>';
+            // Estado de carga
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Analizando...';
+            panel.innerHTML = '<div class="flex justify-center items-center h-40"><i class="fas fa-circle-notch animate-spin text-3xl text-blue-500"></i></div>';
 
-            // Aquí conectaremos con el backend de Vercel después
-            setTimeout(() => {
-                panel.innerHTML = `
-                    <div class="p-3 bg-red-500/10 border-l-4 border-red-500 rounded">
-                        <p class="text-red-400 font-bold text-sm">Seguridad Crítica</p>
-                        <p class="text-xs mt-1 text-slate-300 italic">Se detectó uso de 'eval()'. Esto puede permitir ejecución de código malicioso.</p>
-                    </div>
-                    <div class="p-3 bg-yellow-500/10 border-l-4 border-yellow-500 rounded">
-                        <p class="text-yellow-400 font-bold text-sm">Mejora de Estilo</p>
-                        <p class="text-xs mt-1 text-slate-300">La función 'calcular' no tiene docstring.</p>
-                    </div>
-                `;
-            }, 1000);
+            try {
+                const response = await fetch('/analizar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+
+                const data = await response.json();
+                panel.innerHTML = '';
+
+                if (data.length === 0) {
+                    panel.innerHTML = `
+                        <div class="text-center py-10">
+                            <i class="fas fa-check-circle text-green-500 text-4xl mb-3"></i>
+                            <p class="text-slate-300 font-medium">¡Todo limpio!</p>
+                            <p class="text-slate-500 text-xs">No se encontraron problemas.</p>
+                        </div>`;
+                } else {
+                    data.forEach(res => {
+                        const isError = res.tipo === 'peligro' || res.tipo === 'error';
+                        const colorClass = isError ? 'red' : 'yellow';
+                        const icon = isError ? 'fa-exclamation-triangle' : 'fa-lightbulb';
+
+                        panel.innerHTML += `
+                            <div class="group p-4 bg-${colorClass}-500/5 border border-${colorClass}-500/20 rounded-xl hover:bg-${colorClass}-500/10 transition-all border-l-4 border-l-${colorClass}-500 shadow-sm">
+                                <div class="flex items-start gap-3">
+                                    <i class="fas ${icon} text-${colorClass}-500 mt-1"></i>
+                                    <div>
+                                        <h3 class="font-bold text-sm text-${colorClass}-400 uppercase tracking-tight">${res.titulo}</h3>
+                                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">${res.desc}</p>
+                                    </div>
+                                </div>
+                            </div>`;
+                    });
+                }
+            } catch (error) {
+                panel.innerHTML = `<p class="text-red-400 text-sm text-center">Error al conectar con la API</p>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles text-sm"></i> <span class="font-semibold">Analizar</span>';
+            }
         }
     </script>
 </body>
