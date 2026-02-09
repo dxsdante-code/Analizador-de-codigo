@@ -2,93 +2,53 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>CodeFixer – Analizador Python</title>
+<title>Python AutoFix AI</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-slate-900 text-slate-200 min-h-screen p-6">
+<body class="bg-slate-900 text-slate-200 p-6">
 
-<h1 class="text-2xl font-bold mb-4 text-indigo-400">CodeFixer Python</h1>
+<h1 class="text-2xl font-bold mb-4">🧠 Python Auto-Repair</h1>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<textarea id="code" class="w-full h-72 p-4 bg-slate-800 font-mono text-sm rounded"
+placeholder="# Pega tu código aquí"></textarea>
 
-    <!-- Editor -->
-    <textarea id="editor"
-        class="w-full h-[400px] bg-slate-800 p-4 rounded font-mono text-sm"
-        placeholder="# Pega tu código Python aquí"></textarea>
-
-    <!-- Reportes -->
-    <div class="bg-slate-800 p-4 rounded flex flex-col">
-        <h2 class="font-bold mb-2 text-sm text-indigo-300">Reporte</h2>
-        <div id="reporte" class="text-xs space-y-2 flex-grow"></div>
-
-        <button id="btnAplicar"
-            onclick="aplicar()"
-            class="hidden mt-4 bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm">
-            Aplicar correcciones
-        </button>
-
-        <form id="downloadForm" method="POST" action="/descargar" class="hidden">
-            <input type="hidden" name="code" id="downloadCode">
-            <button class="mt-2 bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-sm">
-                Descargar código corregido
-            </button>
-        </form>
-    </div>
+<div class="flex gap-4 mt-4">
+  <button onclick="analizar()" class="bg-indigo-600 px-6 py-2 rounded">Analizar</button>
+  <button onclick="descargar()" class="bg-emerald-600 px-6 py-2 rounded">Descargar</button>
 </div>
 
-<button onclick="analizar()"
-    class="mt-6 bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded font-bold">
-    Analizar código
-</button>
+<h2 class="mt-6 font-bold">📋 Reporte</h2>
+<pre id="reporte" class="bg-slate-800 p-4 rounded text-xs"></pre>
 
 <script>
-let codigoCorregido = ""
+let codigoFinal = "";
 
 async function analizar() {
-    const code = editor.value
-    const reporte = document.getElementById("reporte")
-    const btnAplicar = document.getElementById("btnAplicar")
-    const downloadForm = document.getElementById("downloadForm")
-
-    reporte.innerHTML = "Analizando..."
-    btnAplicar.classList.add("hidden")
-    downloadForm.classList.add("hidden")
-
-    const res = await fetch("/analizar", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ code })
-    })
-
-    const data = await res.json()
-    reporte.innerHTML = ""
-
-    codigoCorregido = data.codigo_corregido
-
-    if (data.hallazgos.length === 0) {
-        reporte.innerHTML = "<p class='text-green-400'>Sin problemas detectados.</p>"
-        return
-    }
-
-    data.hallazgos.forEach(h => {
-        reporte.innerHTML += `
-            <div class="border-l-4 border-indigo-400 pl-2">
-                <b>${h.codigo}</b> – ${h.mensaje}
-            </div>
-        `
-    })
-
-    if (data.cambios_realizados > 0) {
-        btnAplicar.classList.remove("hidden")
-    }
+  const code = document.getElementById("code").value;
+  const res = await fetch("/analizar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code })
+  });
+  const data = await res.json();
+  codigoFinal = data.codigo_corregido;
+  document.getElementById("reporte").textContent =
+    JSON.stringify(data.hallazgos, null, 2);
+  document.getElementById("code").value = codigoFinal;
 }
 
-function aplicar() {
-    editor.value = codigoCorregido
-    document.getElementById("downloadCode").value = codigoCorregido
-    document.getElementById("downloadForm").classList.remove("hidden")
-    document.getElementById("btnAplicar").classList.add("hidden")
+function descargar() {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/descargar";
+  const input = document.createElement("input");
+  input.type = "hidden";
+  input.name = "code";
+  input.value = codigoFinal;
+  form.appendChild(input);
+  document.body.appendChild(form);
+  form.submit();
 }
 </script>
 
