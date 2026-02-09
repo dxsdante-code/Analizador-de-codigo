@@ -3,70 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeFixer | Smart Analyzer</title>
+    <title>CodeFixer Ultra | AI Refactoring Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0b0f1a; color: #e2e8f0; }
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #080a11; color: #94a3b8; }
         .font-mono { font-family: 'Fira Code', monospace; }
+        .editor-bg { background-color: #0d1117; }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #080a11; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <nav class="border-b border-slate-800 bg-[#0d111c] px-6 py-4 sticky top-0 z-50">
+    <nav class="border-b border-white/5 bg-[#0d1117]/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
         <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="bg-blue-600 p-2 rounded-lg shadow-lg">
-                    <i class="fas fa-code text-white text-sm"></i>
+                <div class="bg-gradient-to-br from-blue-600 to-violet-600 p-2 rounded-xl shadow-lg">
+                    <i class="fas fa-rocket text-white"></i>
                 </div>
-                <h1 class="text-xl font-bold tracking-tight">Code<span class="text-blue-500">Fixer</span></h1>
+                <div>
+                    <h1 class="text-xl font-extrabold text-white tracking-tight leading-none">CodeFixer <span class="text-blue-500">Ultra</span></h1>
+                    <span class="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-bold">Refactor Engine v2.0</span>
+                </div>
             </div>
-            <button onclick="analizarCodigo()" id="btnAnalizar" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold transition-all active:scale-95 flex items-center gap-2">
-                <i class="fas fa-wand-magic-sparkles"></i> Analizar
-            </button>
+            <div class="flex items-center gap-4">
+                <button onclick="analizarCodigo()" id="btnAnalizar" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-blue-900/40">
+                    <i class="fas fa-sync-alt" id="iconAnalizar"></i> Analizar Código
+                </button>
+            </div>
         </div>
     </nav>
 
     <main class="container mx-auto px-4 py-8 flex-grow">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <div class="lg:col-span-8">
-                <div class="bg-[#111827] rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
-                    <div class="flex items-center justify-between px-5 py-3 bg-[#161e2e] border-b border-slate-800">
-                        <div class="flex gap-1.5">
-                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <div class="lg:col-span-8 flex flex-col gap-4">
+                <div class="editor-bg rounded-2xl border border-white/5 overflow-hidden shadow-2xl glow-blue">
+                    <div class="flex items-center justify-between px-5 py-3 bg-white/5 border-b border-white/5">
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
                         </div>
-                        <span class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">main.py</span>
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-mono text-slate-500 uppercase">Input Editor</span>
+                            <span id="labelCambios" class="hidden text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30 animate-pulse">Refactorización Lista</span>
+                        </div>
                     </div>
                     <textarea id="codeEditor" 
-                        class="w-full h-[600px] bg-[#0d1117] p-6 font-mono text-sm text-blue-100 focus:outline-none resize-none leading-relaxed custom-scroll"
-                        placeholder="# Pega tu código Python aquí..."
-                        spellcheck="false"></textarea>
+                        class="w-full h-[650px] bg-transparent p-6 font-mono text-sm text-blue-100 focus:outline-none resize-none leading-relaxed custom-scroll"
+                        placeholder="# Pega tu código Python aquí..."></textarea>
                 </div>
             </div>
 
-            <div class="lg:col-span-4 flex flex-col gap-4">
-                <div class="bg-[#111827] rounded-2xl border border-slate-800 p-6 h-full flex flex-col shadow-xl">
-                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <i class="fas fa-clipboard-list text-blue-500"></i> Reporte de Análisis
-                    </h2>
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                
+                <div id="fixAction" class="hidden transform transition-all scale-95 opacity-0">
+                    <button onclick="aplicarMejoras()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-900/30 flex items-center justify-center gap-3">
+                        <i class="fas fa-wand-magic-sparkles"></i> Aplicar 4 Reglas
+                    </button>
+                    <p class="text-[10px] text-center mt-3 text-slate-500 italic italic">Optimiza imports, nombres, lógica y strings</p>
+                </div>
 
-                    <div id="fixAction" class="hidden mb-6">
-                        <button onclick="aplicarMejoras()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20">
-                            <i class="fas fa-magic"></i> Aplicar Correcciones
-                        </button>
-                    </div>
+                <div class="bg-[#111827] rounded-2xl border border-white/5 p-6 h-full flex flex-col shadow-xl">
+                    <h2 class="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                        <i class="fas fa-brain text-blue-500"></i> Insights del Motor
+                    </h2>
                     
                     <div id="resultsPanel" class="space-y-4 overflow-y-auto flex-grow custom-scroll pr-2">
-                        <div class="flex flex-col items-center justify-center h-40 opacity-20">
-                            <i class="fas fa-terminal text-4xl mb-2"></i>
-                            <p class="text-xs">Sin análisis pendiente</p>
+                        <div class="text-center py-20 opacity-20">
+                            <i class="fas fa-radar text-5xl mb-4"></i>
+                            <p class="text-xs font-mono italic">Escaneando sistema...</p>
                         </div>
                     </div>
                 </div>
@@ -74,26 +85,32 @@
         </div>
     </main>
 
-    <footer class="py-6 text-center text-slate-600 text-[10px] uppercase tracking-widest">
-        Powered by Vercel & Python AST
+    <footer class="py-8 text-center border-t border-white/5">
+        <div class="flex justify-center gap-6 mb-4 opacity-50">
+            <i class="fab fa-python text-xl"></i>
+            <i class="fas fa-microchip text-xl"></i>
+            <i class="fas fa-shield-alt text-xl"></i>
+        </div>
+        <p class="text-[10px] uppercase tracking-[0.4em] text-slate-600 font-bold">Powered by AST Transformer & Vercel Edge</p>
     </footer>
 
     <script>
-        let codigoCorregido = "";
+        let codigoRefactorizado = "";
 
         async function analizarCodigo() {
             const editor = document.getElementById('codeEditor');
             const panel = document.getElementById('resultsPanel');
             const btn = document.getElementById('btnAnalizar');
+            const icon = document.getElementById('iconAnalizar');
             const fixAction = document.getElementById('fixAction');
+            const labelCambios = document.getElementById('labelCambios');
 
             if (!editor.value.trim()) return;
 
-            // Loading state
+            // Iniciar Animación
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i>';
-            panel.innerHTML = '<div class="flex justify-center py-10"><i class="fas fa-sync fa-spin text-blue-500 text-2xl"></i></div>';
-            fixAction.classList.add('hidden');
+            icon.classList.add('animate-spin');
+            panel.innerHTML = '<div class="flex flex-col items-center justify-center h-full gap-4"><div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div><p class="text-[10px] font-mono text-blue-500 animate-pulse">TRANSFORMING_AST_TREE...</p></div>';
 
             try {
                 const response = await fetch('/analizar', {
@@ -102,55 +119,65 @@
                     body: JSON.stringify({ code: editor.value })
                 });
 
-                if (!response.ok) throw new Error('Error 500: Server Crash');
-
                 const data = await response.json();
-                panel.innerHTML = '';
-                codigoCorregido = data.codigo_corregido;
+                codigoRefactorizado = data.codigo_corregido;
 
-                // Si hay cambios, mostrar botón mágico
+                panel.innerHTML = '';
+                
                 if (data.cambios_realizados > 0) {
+                    // Mostrar botones de acción con animación
                     fixAction.classList.remove('hidden');
+                    setTimeout(() => {
+                        fixAction.classList.remove('scale-95', 'opacity-0');
+                    }, 10);
+                    labelCambios.classList.remove('hidden');
                 }
 
                 if (data.hallazgos.length === 0) {
-                    panel.innerHTML = '<div class="text-center p-6 text-green-500 text-xs font-bold">✨ Código Limpio</div>';
+                    panel.innerHTML = '<div class="p-8 text-center"><i class="fas fa-check-double text-emerald-500 text-3xl mb-4"></i><p class="text-xs font-bold text-slate-300">ESTRUCTURA PERFECTA</p><p class="text-[10px] text-slate-500 mt-2 italic italic italic italic italic">No se requieren transformaciones.</p></div>';
                 } else {
                     data.hallazgos.forEach(res => {
-                        const colors = { 'critico': 'red', 'peligro': 'orange', 'advertencia': 'yellow', 'info': 'blue', 'error': 'pink' };
-                        const color = colors[res.tipo] || 'blue';
+                        const severidad = {
+                            'critico': 'from-red-500/20 to-transparent border-red-500',
+                            'peligro': 'from-orange-500/20 to-transparent border-orange-500',
+                            'advertencia': 'from-yellow-500/20 to-transparent border-yellow-500',
+                            'info': 'from-blue-500/20 to-transparent border-blue-500'
+                        };
+
+                        const gradiente = severidad[res.tipo] || severidad['info'];
                         
                         panel.innerHTML += `
-                            <div class="p-4 bg-slate-900/50 border border-slate-800 rounded-xl border-l-4 border-${color}-500 shadow-sm">
+                            <div class="p-4 bg-gradient-to-r ${gradiente} border-l-4 rounded-r-xl shadow-lg transition-all hover:translate-x-1">
                                 <div class="flex justify-between items-start mb-2">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-lightbulb text-${color}-500 text-[10px]"></i>
-                                        <span class="text-[10px] font-black text-${color}-500 uppercase">${res.codigo || 'SAST'}</span>
-                                    </div>
-                                    <span class="text-[9px] text-slate-600 font-mono italic">Línea ${res.linea}</span>
+                                    <span class="text-[9px] font-black tracking-widest uppercase opacity-70">${res.codigo}</span>
+                                    <span class="text-[9px] font-mono text-slate-500">LINEA ${res.linea}</span>
                                 </div>
-                                <p class="text-[12px] text-slate-300 font-medium leading-snug">${res.mensaje}</p>
+                                <p class="text-[12px] text-white font-medium leading-relaxed">${res.mensaje}</p>
                             </div>`;
                     });
                 }
             } catch (error) {
-                panel.innerHTML = `
-                    <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
-                        <i class="fas fa-exclamation-triangle text-red-500 mb-2"></i>
-                        <p class="text-red-500 text-[10px] font-bold uppercase">Error de Servidor (500)</p>
-                        <p class="text-slate-500 text-[9px] mt-1 italic">Verifica que 'astor' esté en requirements.txt</p>
-                    </div>`;
+                panel.innerHTML = '<div class="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center text-[10px] text-red-500 font-bold uppercase tracking-widest">CRITICAL_SYSTEM_FAILURE</div>';
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Analizar';
+                icon.classList.remove('animate-spin');
             }
         }
 
         function aplicarMejoras() {
-            if (codigoCorregido) {
-                document.getElementById('codeEditor').value = codigoCorregido;
+            if (codigoRefactorizado) {
+                const editor = document.getElementById('codeEditor');
+                editor.value = codigoRefactorizado;
+                
+                // Efecto visual de "Flash" en el editor al actualizar
+                editor.classList.add('ring-4', 'ring-emerald-500/20');
+                setTimeout(() => editor.classList.remove('ring-4', 'ring-emerald-500/20'), 500);
+
                 document.getElementById('fixAction').classList.add('hidden');
-                analizarCodigo(); // Re-analizar para confirmar limpieza
+                document.getElementById('labelCambios').classList.add('hidden');
+                
+                // Re-analizar automáticamente para confirmar que está limpio
+                analizarCodigo();
             }
         }
     </script>
