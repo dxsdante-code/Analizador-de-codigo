@@ -3,182 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeFixer Ultra | AI Refactoring Engine</title>
+    <title>CodeFixer Ultra</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #080a11; color: #94a3b8; }
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
         .font-mono { font-family: 'Fira Code', monospace; }
-        .editor-bg { background-color: #0d1117; }
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #080a11; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
+        body { background-color: #080a11; color: #cbd5e1; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col p-4">
 
-    <nav class="border-b border-white/5 bg-[#0d1117]/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-gradient-to-br from-blue-600 to-violet-600 p-2 rounded-xl shadow-lg">
-                    <i class="fas fa-rocket text-white"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-extrabold text-white tracking-tight leading-none">CodeFixer <span class="text-blue-500">Ultra</span></h1>
-                    <span class="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-bold">Refactor Engine v2.0</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <button onclick="analizarCodigo()" id="btnAnalizar" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-blue-900/40">
-                    <i class="fas fa-sync-alt" id="iconAnalizar"></i> Analizar Código
+    <nav class="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+        <h1 class="text-xl font-bold text-white"><i class="fas fa-microchip text-blue-500 mr-2"></i>CodeFixer</h1>
+        <div class="flex gap-2">
+            <button onclick="analizarCodigo()" id="btnAnalizar" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all">
+                <i class="fas fa-play"></i> Analizar
+            </button>
+            <form action="/descargar" method="POST" id="formDescarga">
+                <input type="hidden" name="code" id="hiddenCode">
+                <button type="submit" id="btnDescargar" class="hidden bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all">
+                    <i class="fas fa-download"></i> Descargar .py
                 </button>
-            </div>
+            </form>
         </div>
     </nav>
 
-    <main class="container mx-auto px-4 py-8 flex-grow">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            <div class="lg:col-span-8 flex flex-col gap-4">
-                <div class="editor-bg rounded-2xl border border-white/5 overflow-hidden shadow-2xl glow-blue">
-                    <div class="flex items-center justify-between px-5 py-3 bg-white/5 border-b border-white/5">
-                        <div class="flex gap-2">
-                            <div class="w-3 h-3 rounded-full bg-red-500/50"></div>
-                            <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-                            <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="text-[10px] font-mono text-slate-500 uppercase">Input Editor</span>
-                            <span id="labelCambios" class="hidden text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30 animate-pulse">Refactorización Lista</span>
-                        </div>
-                    </div>
-                    <textarea id="codeEditor" 
-                        class="w-full h-[650px] bg-transparent p-6 font-mono text-sm text-blue-100 focus:outline-none resize-none leading-relaxed custom-scroll"
-                        placeholder="# Pega tu código Python aquí..."></textarea>
-                </div>
-            </div>
-
-            <div class="lg:col-span-4 flex flex-col gap-6">
-                
-                <div id="fixAction" class="hidden transform transition-all scale-95 opacity-0">
-                    <button onclick="aplicarMejoras()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-900/30 flex items-center justify-center gap-3">
-                        <i class="fas fa-wand-magic-sparkles"></i> Aplicar 4 Reglas
-                    </button>
-                    <p class="text-[10px] text-center mt-3 text-slate-500 italic italic">Optimiza imports, nombres, lógica y strings</p>
-                </div>
-
-                <div class="bg-[#111827] rounded-2xl border border-white/5 p-6 h-full flex flex-col shadow-xl">
-                    <h2 class="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                        <i class="fas fa-brain text-blue-500"></i> Insights del Motor
-                    </h2>
-                    
-                    <div id="resultsPanel" class="space-y-4 overflow-y-auto flex-grow custom-scroll pr-2">
-                        <div class="text-center py-20 opacity-20">
-                            <i class="fas fa-radar text-5xl mb-4"></i>
-                            <p class="text-xs font-mono italic">Escaneando sistema...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+        <div class="lg:col-span-8 bg-[#0d1117] rounded-xl border border-white/5 overflow-hidden flex flex-col">
+            <textarea id="codeEditor" class="w-full flex-grow bg-transparent p-6 font-mono text-sm text-blue-100 focus:outline-none resize-none" placeholder="# Pega tu código aquí..."></textarea>
         </div>
-    </main>
 
-    <footer class="py-8 text-center border-t border-white/5">
-        <div class="flex justify-center gap-6 mb-4 opacity-50">
-            <i class="fab fa-python text-xl"></i>
-            <i class="fas fa-microchip text-xl"></i>
-            <i class="fas fa-shield-alt text-xl"></i>
+        <div class="lg:col-span-4 bg-[#0d1117] rounded-xl border border-white/5 p-6 space-y-4">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <i class="fas fa-list text-blue-500"></i> Reporte
+            </h2>
+            <div id="resultsPanel" class="space-y-4 overflow-y-auto max-h-[500px]">
+                <p class="text-[10px] text-slate-600 italic">Listo para procesar...</p>
+            </div>
+            <button id="btnAplicar" onclick="aplicarMejoras()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">
+                Aplicar Corrección
+            </button>
         </div>
-        <p class="text-[10px] uppercase tracking-[0.4em] text-slate-600 font-bold">Powered by AST Transformer & Vercel Edge</p>
-    </footer>
+    </div>
 
     <script>
-        let codigoRefactorizado = "";
+        let codigoCorregido = "";
 
         async function analizarCodigo() {
-            const editor = document.getElementById('codeEditor');
+            const code = document.getElementById('codeEditor').value;
             const panel = document.getElementById('resultsPanel');
             const btn = document.getElementById('btnAnalizar');
-            const icon = document.getElementById('iconAnalizar');
-            const fixAction = document.getElementById('fixAction');
-            const labelCambios = document.getElementById('labelCambios');
 
-            if (!editor.value.trim()) return;
+            if (!code.trim()) return;
 
-            // Iniciar Animación
             btn.disabled = true;
-            icon.classList.add('animate-spin');
-            panel.innerHTML = '<div class="flex flex-col items-center justify-center h-full gap-4"><div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div><p class="text-[10px] font-mono text-blue-500 animate-pulse">TRANSFORMING_AST_TREE...</p></div>';
+            panel.innerHTML = '<div class="flex justify-center py-10"><i class="fas fa-sync fa-spin text-blue-500"></i></div>';
 
             try {
                 const response = await fetch('/analizar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: editor.value })
+                    body: JSON.stringify({ code: code })
                 });
 
                 const data = await response.json();
-                codigoRefactorizado = data.codigo_corregido;
-
+                codigoCorregido = data.codigo_corregido;
                 panel.innerHTML = '';
-                
+
                 if (data.cambios_realizados > 0) {
-                    // Mostrar botones de acción con animación
-                    fixAction.classList.remove('hidden');
-                    setTimeout(() => {
-                        fixAction.classList.remove('scale-95', 'opacity-0');
-                    }, 10);
-                    labelCambios.classList.remove('hidden');
+                    document.getElementById('btnAplicar').classList.remove('hidden');
+                    document.getElementById('btnDescargar').classList.remove('hidden');
+                    document.getElementById('hiddenCode').value = data.codigo_corregido;
                 }
 
-                if (data.hallazgos.length === 0) {
-                    panel.innerHTML = '<div class="p-8 text-center"><i class="fas fa-check-double text-emerald-500 text-3xl mb-4"></i><p class="text-xs font-bold text-slate-300">ESTRUCTURA PERFECTA</p><p class="text-[10px] text-slate-500 mt-2 italic italic italic italic italic">No se requieren transformaciones.</p></div>';
-                } else {
-                    data.hallazgos.forEach(res => {
-                        const severidad = {
-                            'critico': 'from-red-500/20 to-transparent border-red-500',
-                            'peligro': 'from-orange-500/20 to-transparent border-orange-500',
-                            'advertencia': 'from-yellow-500/20 to-transparent border-yellow-500',
-                            'info': 'from-blue-500/20 to-transparent border-blue-500'
-                        };
-
-                        const gradiente = severidad[res.tipo] || severidad['info'];
-                        
-                        panel.innerHTML += `
-                            <div class="p-4 bg-gradient-to-r ${gradiente} border-l-4 rounded-r-xl shadow-lg transition-all hover:translate-x-1">
-                                <div class="flex justify-between items-start mb-2">
-                                    <span class="text-[9px] font-black tracking-widest uppercase opacity-70">${res.codigo}</span>
-                                    <span class="text-[9px] font-mono text-slate-500">LINEA ${res.linea}</span>
-                                </div>
-                                <p class="text-[12px] text-white font-medium leading-relaxed">${res.mensaje}</p>
-                            </div>`;
-                    });
-                }
-            } catch (error) {
-                panel.innerHTML = '<div class="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center text-[10px] text-red-500 font-bold uppercase tracking-widest">CRITICAL_SYSTEM_FAILURE</div>';
+                data.hallazgos.forEach(res => {
+                    panel.innerHTML += `
+                        <div class="p-3 bg-blue-500/5 border-l-4 border-blue-500 rounded text-[12px]">
+                            <p class="font-bold text-blue-400 uppercase">${res.codigo}</p>
+                            <p class="text-slate-300 mt-1">${res.mensaje}</p>
+                        </div>`;
+                });
+            } catch (e) {
+                panel.innerHTML = '<p class="text-red-500 text-xs uppercase">Error de servidor</p>';
             } finally {
                 btn.disabled = false;
-                icon.classList.remove('animate-spin');
             }
         }
 
         function aplicarMejoras() {
-            if (codigoRefactorizado) {
-                const editor = document.getElementById('codeEditor');
-                editor.value = codigoRefactorizado;
-                
-                // Efecto visual de "Flash" en el editor al actualizar
-                editor.classList.add('ring-4', 'ring-emerald-500/20');
-                setTimeout(() => editor.classList.remove('ring-4', 'ring-emerald-500/20'), 500);
-
-                document.getElementById('fixAction').classList.add('hidden');
-                document.getElementById('labelCambios').classList.add('hidden');
-                
-                // Re-analizar automáticamente para confirmar que está limpio
-                analizarCodigo();
-            }
+            document.getElementById('codeEditor').value = codigoCorregido;
+            document.getElementById('btnAplicar').classList.add('hidden');
+            analizarCodigo();
         }
     </script>
 </body>
