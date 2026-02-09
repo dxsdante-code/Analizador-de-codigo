@@ -9,32 +9,59 @@ import requests
 from flask import Flask, jsonify, render_template, request
 from flake8.api import legacy as flake8
 
-# ---------------- CONFIG ----------------
+app = Flask(__name__)
+
+# Configuración de OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
-OPENAI_MODEL = "gpt-4o-mini"
 
-# Configuración de carpetas para Flask
-app = Flask(__name__, template_folder="templates")
+class AutoRepair(ast.NodeTransformer):
+    def __init__(self):
+        self.cambios = 0
+    def visit_FunctionDef(self, node):
+        if not ast.get_docstring(node):
+            node.body.insert(0, ast.Expr(value=ast.Constant(value="Docstring automático.")))
+            self.cambios += 1
+        return self.generic_visit(node)
 
-# ---------------- [AUTO REPAIR & IA LOGIC] ----------------
-# (Mantén aquí las clases AutoRepair y las funciones de análisis del código anterior)
-# ... [Código omitido para brevedad, mantener igual que el anterior] ...
-
-# ---------------- RUTAS CORREGIDAS ----------------
+def reparar_codigo(code):
+    try:
+        # Pre-reparación básica (añadir colons)
+        lines = code.splitlines()
+        for i, l in enumerate(lines):
+            if l.strip().startswith(("def ", "if ", "for ")) and not l.strip().endswith(":"):
+                lines[i] += ":"
+        code = "\n".join(lines)
+        
+        # AST y Formateo
+        tree = ast.parse(code)
+        motor = AutoRepair()
+        tree = motor.visit(tree)
+        code = ast.unparse(tree)
+        code = black.format_str(code, mode=black.Mode())
+        return code, motor.cambios, True
+    except Exception as e:
+        return code, 0, False
 
 @app.route("/")
 def home():
-    # Esta línea es la que hace que veas el HTML y no solo texto
-    return render_template("index.html")
+    try:
+        return render_template("index.html")
+    except Exception as e:
+        return f"Error: No se encuentra index.html en /templates. Detalle: {str(e)}", 500
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
     data = request.get_json()
     code = data.get("code", "")
-    # ... (Resto de la lógica de análisis que ya teníamos)
-    return jsonify({"status": "ok", "codigo_limpio": code}) # Simplificado para el ejemplo
+    fixed_code, cambios, ok = reparar_codigo(code)
+    
+    return jsonify({
+        "codigo_limpio": fixed_code,
+        "cambios": cambios,
+        "status": "ok" if ok else "error"
+    })
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# Requisito para Vercel
+app.debug = False
     
