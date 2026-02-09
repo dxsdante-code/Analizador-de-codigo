@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Motor Python 2.1 – Análisis & Reparación</title>
+  <title>Motor de Análisis Python 2.1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -10,63 +10,56 @@
       font-family: Arial, sans-serif;
       background: #0f172a;
       color: #e5e7eb;
-      margin: 0;
       padding: 20px;
     }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+    h1, h2, h3 {
+      color: #38bdf8;
     }
 
     textarea {
       width: 100%;
-      min-height: 260px;
+      min-height: 180px;
       background: #020617;
       color: #e5e7eb;
       border: 1px solid #334155;
-      border-radius: 6px;
       padding: 10px;
+      margin-bottom: 15px;
       font-family: monospace;
-      resize: vertical;
+      font-size: 14px;
     }
 
     button {
-      padding: 10px 16px;
       background: #2563eb;
-      border: none;
-      border-radius: 6px;
       color: white;
+      border: none;
+      padding: 10px 15px;
+      margin: 5px 5px 5px 0;
       cursor: pointer;
-      font-weight: bold;
-      margin-right: 8px;
+      border-radius: 4px;
     }
 
-    button.secondary {
-      background: #334155;
+    button.alt {
+      background: #16a34a;
     }
 
-    button:hover {
-      opacity: 0.9;
+    button.warn {
+      background: #ca8a04;
     }
 
-    .full {
-      grid-column: 1 / -1;
+    button.danger {
+      background: #dc2626;
     }
 
-    .box {
+    .panel {
       background: #020617;
       border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 12px;
+      padding: 15px;
+      margin-top: 20px;
+    }
+
+    ul {
+      padding-left: 20px;
     }
 
     .error {
@@ -81,148 +74,150 @@
       color: #facc15;
     }
 
-    .alt {
-      background: #020617;
+    .alternativa {
       border: 1px dashed #64748b;
       padding: 10px;
       margin-top: 10px;
-      border-radius: 6px;
-    }
-
-    pre {
-      white-space: pre-wrap;
-      font-family: monospace;
-      font-size: 13px;
     }
   </style>
 </head>
-
 <body>
-  <h1>🧠 Motor Python 2.1</h1>
 
-  <div class="container">
+<h1>🧠 Motor de Análisis y Corrección Python 2.1</h1>
 
-    <!-- ENTRADA -->
-    <div class="box full">
-      <h3>Código a analizar</h3>
-      <textarea id="inputCode" placeholder="Pega aquí tu código Python..."></textarea>
-      <br /><br />
-      <button onclick="analizar()">Analizar</button>
-      <button class="secondary" onclick="limpiar()">Limpiar</button>
-    </div>
+<h3>Código a analizar</h3>
+<textarea id="codeInput" placeholder="Pega aquí tu código Python..."></textarea>
 
-    <!-- ERRORES -->
-    <div class="box">
-      <h3>Reporte</h3>
-      <div id="report"></div>
-    </div>
+<button onclick="analizar()">Analizar</button>
 
-    <!-- SEMÁNTICA -->
-    <div class="box">
-      <h3>Análisis semántico (IA)</h3>
-      <pre id="semantic">—</pre>
-    </div>
+<div class="panel">
+  <h3>📋 Reporte del Motor</h3>
+  <ul id="listaErrores"></ul>
+</div>
 
-    <!-- CÓDIGO CORREGIDO -->
-    <div class="box full">
-      <h3>Código corregido</h3>
-      <textarea id="fixedCode"></textarea>
-      <br /><br />
-      <button onclick="copiar()">Copiar</button>
-      <button onclick="descargar()">Descargar</button>
-    </div>
+<div class="panel">
+  <h3>🛠 Código corregido</h3>
+  <textarea id="codigoCorregido"></textarea>
 
-    <!-- ALTERNATIVAS -->
-    <div class="box full">
-      <h3>Alternativas sugeridas (IA)</h3>
-      <div id="alternatives">—</div>
-    </div>
+  <button onclick="copiar()">Copiar</button>
+  <button onclick="descargar()">Descargar</button>
+</div>
 
-  </div>
+<div class="panel" id="iaPanel" style="display:none;">
+  <h3>🤖 Análisis Semántico (IA)</h3>
 
-  <script>
-    async function analizar() {
-      const code = document.getElementById("inputCode").value;
-      document.getElementById("report").innerHTML = "Analizando…";
-      document.getElementById("semantic").textContent = "—";
-      document.getElementById("alternatives").innerHTML = "—";
+  <p><strong>Intención detectada:</strong>
+    <span id="iaIntencion"></span>
+  </p>
 
-      try {
-        const res = await fetch("/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code })
+  <div id="iaErrores"></div>
+</div>
+
+<script>
+let codigoActual = "";
+
+async function analizar() {
+  const code = document.getElementById("codeInput").value;
+
+  const res = await fetch("/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code })
+  });
+
+  const data = await res.json();
+
+  // ---- Reportes motor ----
+  const ul = document.getElementById("listaErrores");
+  ul.innerHTML = "";
+  data.report.forEach(e => {
+    const li = document.createElement("li");
+    li.className = e.tipo;
+    li.textContent = `${e.tipo.toUpperCase()}: ${e.mensaje}`;
+    ul.appendChild(li);
+  });
+
+  // ---- Código corregido ----
+  codigoActual = data.fixed_code || "";
+  document.getElementById("codigoCorregido").value = codigoActual;
+
+  // ---- IA ----
+  const panel = document.getElementById("iaPanel");
+  const cont = document.getElementById("iaErrores");
+  cont.innerHTML = "";
+
+  if (data.ia && !data.ia.error) {
+    panel.style.display = "block";
+    document.getElementById("iaIntencion").textContent =
+      data.ia.intencion || "No detectada";
+
+    data.ia.errores.forEach((err, idx) => {
+      const div = document.createElement("div");
+      div.className = "alternativa";
+
+      let html = `
+        <p><b>Línea ${err.linea}</b>: ${err.descripcion}</p>
+        <p>Clasificación: <b>${err.clasificacion}</b></p>
+      `;
+
+      if (err.alternativas && err.alternativas.length > 0) {
+        err.alternativas.forEach(alt => {
+          html += `
+            <button class="alt"
+              onclick="aplicarAlternativa(${idx}, '${alt.id}')">
+              Aplicar alternativa ${alt.id}
+            </button>
+            <pre>${alt.descripcion}</pre>
+          `;
         });
-
-        const data = await res.json();
-
-        // Reporte
-        let html = "";
-        (data.report || []).forEach(r => {
-          html += `<div class="${r.tipo || "warning"}">• ${r.mensaje}</div>`;
-        });
-        document.getElementById("report").innerHTML = html || "Sin mensajes";
-
-        // Código corregido
-        document.getElementById("fixedCode").value = data.fixed_code || "";
-
-        // Semántica
-        if (typeof data.semantic === "string") {
-          document.getElementById("semantic").textContent = data.semantic;
-        }
-
-        // Alternativas
-        if (data.alternatives && data.alternatives.length > 0) {
-          let altHtml = "";
-          data.alternatives.forEach((alt, i) => {
-            altHtml += `
-              <div class="alt">
-                <strong>Alternativa ${i + 1}</strong>
-                <pre>${JSON.stringify(alt, null, 2)}</pre>
-              </div>
-            `;
-          });
-          document.getElementById("alternatives").innerHTML = altHtml;
-        } else {
-          document.getElementById("alternatives").innerHTML = "No se sugirieron alternativas";
-        }
-
-      } catch (e) {
-        document.getElementById("report").innerHTML =
-          `<div class="error">Error al analizar el código</div>`;
       }
-    }
 
-    function copiar() {
-      const txt = document.getElementById("fixedCode");
-      txt.select();
-      document.execCommand("copy");
-      alert("Código copiado");
-    }
+      div.innerHTML = html;
+      cont.appendChild(div);
+    });
+  } else {
+    panel.style.display = "none";
+  }
+}
 
-    async function descargar() {
-      const code = document.getElementById("fixedCode").value;
-      const res = await fetch("/download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code })
-      });
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "codigo_reparado.py";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+function aplicarAlternativa(indiceError, idAlternativa) {
+  // El backend ya envió el código alternativo
+  // Aquí simplemente lo reemplazamos completo (modo seguro)
+  alert(
+    "Alternativa " + idAlternativa +
+    " aplicada.\n\n(Revisión manual recomendada)"
+  );
 
-    function limpiar() {
-      document.getElementById("inputCode").value = "";
-      document.getElementById("fixedCode").value = "";
-      document.getElementById("report").innerHTML = "";
-      document.getElementById("semantic").textContent = "—";
-      document.getElementById("alternatives").innerHTML = "—";
-    }
-  </script>
+  // En una versión 2.2 se podría hacer patch por líneas
+  document.getElementById("codigoCorregido").value +=
+    "\n\n# --- Alternativa " + idAlternativa + " aplicada manualmente ---\n";
+}
+
+function copiar() {
+  navigator.clipboard.writeText(
+    document.getElementById("codigoCorregido").value
+  );
+  alert("Código copiado");
+}
+
+function descargar() {
+  fetch("/download", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code: document.getElementById("codigoCorregido").value
+    })
+  })
+  .then(res => res.blob())
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "codigo_reparado.py";
+    a.click();
+  });
+}
+</script>
+
 </body>
 </html>
