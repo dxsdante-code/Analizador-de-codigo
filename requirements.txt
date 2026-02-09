@@ -1,9 +1,7 @@
-Flask==3.0.0
+Flask==2.3.4
 requests==2.31.0
-
-black==24.1.1
-autopep8==2.0.4
-isort==5.13.2
 astor==0.8.1
-
-flake8==7.0.0
+autopep8==2.0.2
+black==23.3.0
+isort==6.0.5
+flake8==6.1.0
