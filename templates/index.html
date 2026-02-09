@@ -2,176 +2,59 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Python Auto-Repair</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body {
-  margin: 0;
-  font-family: Consolas, monospace;
-  background: #0f172a;
-  color: #e5e7eb;
-}
-
-header {
-  background: #020617;
-  padding: 12px 20px;
-  font-size: 18px;
-  font-weight: bold;
-  border-bottom: 1px solid #1e293b;
-}
-
-.container {
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-  gap: 12px;
-}
-
-textarea {
-  width: 100%;
-  min-height: 200px;
-  background: #020617;
-  color: #e5e7eb;
-  border: 1px solid #334155;
-  border-radius: 6px;
-  padding: 12px;
-  font-size: 13px;
-  resize: vertical;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-}
-
-button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-button.primary {
-  background: #6366f1;
-  color: white;
-}
-
-button.secondary {
-  background: #22c55e;
-  color: black;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.panel {
-  background: #020617;
-  border: 1px solid #1e293b;
-  border-radius: 6px;
-  padding: 12px;
-}
-
-.panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-  color: #93c5fd;
-}
-
-pre {
-  white-space: pre-wrap;
-  font-size: 12px;
-}
-
-.bad {
-  color: #f87171;
-}
-
-.good {
-  color: #4ade80;
-}
-</style>
+<title>Python Auto-Repair Engine</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body>
+<body class="bg-slate-900 text-slate-200 min-h-screen">
 
-<header>🧠 Python Auto-Repair Engine</header>
+<div class="max-w-6xl mx-auto p-6 space-y-6">
 
-<div class="container">
+<h1 class="text-2xl font-bold flex items-center gap-2">🧠 Python Auto-Repair Engine</h1>
 
-  <textarea id="codigo" placeholder="Pega aquí el código Python roto..."></textarea>
+<!-- EDITOR -->
+<textarea id="codeInput" class="w-full h-64 bg-slate-800 p-4 rounded font-mono text-sm"
+placeholder="Pega aquí tu código Python..."></textarea>
 
-  <div class="actions">
-    <button class="primary" onclick="analizar()">🔍 Analizar & Reparar</button>
-    <button class="secondary" onclick="descargar()" id="btnDescargar" disabled>⬇ Descargar</button>
-  </div>
+<div class="flex gap-4">
+<button onclick="analizar()" class="bg-indigo-600 px-4 py-2 rounded">🔍 Analizar</button>
+<button onclick="copiar()" class="bg-emerald-600 px-4 py-2 rounded">📋 Copiar</button>
+</div>
 
-  <div class="panel">
-    <h3>📋 Reporte</h3>
-    <pre id="reporte">Esperando análisis...</pre>
-  </div>
+<!-- ERRORES -->
+<div>
+<h2 class="font-bold mt-6">📋 Reporte</h2>
+<pre id="errores" class="bg-slate-800 p-4 rounded text-sm"></pre>
+</div>
 
-  <div class="panel">
-    <h3>🧩 Código corregido</h3>
-    <pre id="resultado"></pre>
-  </div>
+<!-- RESULTADO -->
+<div>
+<h2 class="font-bold mt-6">🛠 Código corregido</h2>
+<pre id="resultado" class="bg-slate-800 p-4 rounded text-sm overflow-auto"></pre>
+</div>
 
 </div>
 
 <script>
-let codigoFinal = ""
+async function analizar() {
+    const code = document.getElementById("codeInput").value;
+    const res = await fetch("/analizar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code })
+    });
 
-function analizar() {
-  const codigo = document.getElementById("codigo").value
-  document.getElementById("reporte").textContent = "⏳ Analizando..."
-  document.getElementById("resultado").textContent = ""
-  document.getElementById("btnDescargar").disabled = true
-
-  fetch("/analizar", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({code: codigo})
-  })
-  .then(r => r.json())
-  .then(data => {
-    codigoFinal = data.codigo_corregido || ""
-
-    if (data.hallazgos && data.hallazgos.length > 0) {
-      document.getElementById("reporte").innerHTML =
-        JSON.stringify(data.hallazgos, null, 2)
-    } else {
-      document.getElementById("reporte").innerHTML =
-        "<span class='good'>✔ Sin errores detectados</span>"
-    }
-
-    if (codigoFinal) {
-      document.getElementById("resultado").textContent = codigoFinal
-      document.getElementById("btnDescargar").disabled = false
-    }
-  })
-  .catch(err => {
-    document.getElementById("reporte").innerHTML =
-      "<span class='bad'>❌ Error al analizar</span>"
-  })
+    const data = await res.json();
+    document.getElementById("errores").textContent =
+        JSON.stringify(data.errores, null, 2);
+    document.getElementById("resultado").textContent =
+        data.codigo_corregido || "";
 }
 
-function descargar() {
-  const form = document.createElement("form")
-  form.method = "POST"
-  form.action = "/descargar"
-
-  const input = document.createElement("input")
-  input.type = "hidden"
-  input.name = "code"
-  input.value = codigoFinal
-
-  form.appendChild(input)
-  document.body.appendChild(form)
-  form.submit()
-  document.body.removeChild(form)
+function copiar() {
+    const text = document.getElementById("resultado").textContent;
+    navigator.clipboard.writeText(text);
+    alert("Código copiado");
 }
 </script>
 
