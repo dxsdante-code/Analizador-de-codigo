@@ -4,6 +4,4 @@ black
 autopep8
 isort
 flake8
-transformers
-huggingface_hub
 requests
