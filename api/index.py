@@ -4,84 +4,14 @@ import astor
 import black
 import autopep8
 import isort
-import re
+from flake8.api import legacy as flake8
 from flask import Flask, request, jsonify, render_template, Response
 
-# Carpeta de templates
+# Carpeta de templates al nivel superior
 template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
 app = Flask(__name__, template_folder=template_dir)
 
-
-# ----------------- AUTO-REPAIR DE SYNTAX -----------------
-class SyntaxAutoRepair:
-    def __init__(self, codigo):
-        self.original = codigo
-        self.codigo = codigo
-        self.cambios = []
-
-    def reparar(self):
-        # Intentos limitados para no entrar en loop infinito
-        for _ in range(5):
-            try:
-                ast.parse(self.codigo)
-                return self.codigo
-            except SyntaxError as e:
-                reparado = self._aplicar_fix(e)
-                if not reparado:
-                    break
-        return self.codigo
-
-    def _aplicar_fix(self, error):
-        linea = error.lineno
-        msg = str(error)
-        lines = self.codigo.splitlines()
-
-        # 1. ":" faltante
-        if "expected ':'" in msg and linea:
-            if re.match(r'\s*(if|for|while|def|class)\b', lines[linea-1]):
-                lines[linea-1] += ":"
-                self._commit("Se añadió ':' faltante", linea)
-                self.codigo = "\n".join(lines)
-                return True
-
-        # 2. Indentación
-        if "IndentationError" in msg or "unexpected indent" in msg:
-            self.codigo = self._fix_indentacion()
-            self._commit("Indentación corregida", linea)
-            return True
-
-        # 3. Comillas no cerradas
-        if "EOL while scanning string literal" in msg:
-            lines[linea-1] += "'"
-            self._commit("Comilla cerrada automáticamente", linea)
-            self.codigo = "\n".join(lines)
-            return True
-
-        # 4. Paréntesis o corchetes abiertos
-        if "was never closed" in msg:
-            self.codigo += "\n)"
-            self._commit("Paréntesis cerrado automáticamente", linea)
-            return True
-
-        return False
-
-    def _fix_indentacion(self):
-        fixed = []
-        indent = 0
-        for line in self.codigo.splitlines():
-            stripped = line.lstrip()
-            if stripped.endswith(":"):
-                fixed.append(" " * indent + stripped)
-                indent += 4
-            else:
-                fixed.append(" " * indent + stripped)
-        return "\n".join(fixed)
-
-    def _commit(self, mensaje, linea):
-        self.cambios.append({"tipo": "auto-fix", "linea": linea, "mensaje": mensaje})
-
-
-# ----------------- AST PARA DOCSTRINGS -----------------
+# ----------------- AUTO REPAIR -----------------
 class AutoRepair(ast.NodeTransformer):
     def __init__(self):
         self.cambios = 0
@@ -93,44 +23,43 @@ class AutoRepair(ast.NodeTransformer):
             self.cambios += 1
         return self.generic_visit(node)
 
+def reparar_codigo(code: str):
+    """
+    Aplica reparaciones automáticas:
+    - Añade ":" faltantes en def/if/for/while/class
+    - Añade docstrings faltantes
+    - Formatea con Black, autopep8
+    - Ordena imports con isort
+    """
+    lines = code.split("\n")
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith(("def ", "if ", "for ", "while ", "class ")) and not stripped.endswith(":"):
+            lines[i] += ":"
+    repaired = "\n".join(lines)
 
-# ----------------- FUNCIONES DE ANÁLISIS -----------------
-def reparar_codigo(code):
-    # Primero syntax auto-repair
-    reparador = SyntaxAutoRepair(code)
-    code_reparado = reparador.reparar()
-
-    # AST docstrings
+    # AST para docstrings
     try:
-        tree = ast.parse(code_reparado)
+        tree = ast.parse(repaired)
         motor = AutoRepair()
         nuevo_tree = motor.visit(tree)
         ast.fix_missing_locations(nuevo_tree)
-        code_final = astor.to_source(nuevo_tree)
+        codigo_final = astor.to_source(nuevo_tree)
     except Exception:
-        code_final = code_reparado
-        motor = AutoRepair()
+        codigo_final = repaired
+        motor = AutoRepair()  # cero cambios
 
-    # Formateo Black
+    # Formateo
     try:
-        code_final = black.format_str(code_final, mode=black.Mode())
+        codigo_final = black.format_str(codigo_final, mode=black.Mode())
     except Exception:
         pass
+    codigo_final = autopep8.fix_code(codigo_final)
+    codigo_final = isort.code(codigo_final)
 
-    # Formateo autopep8
-    code_final = autopep8.fix_code(code_final)
+    return codigo_final, motor.cambios
 
-    # Ordenar imports
-    code_final = isort.code(code_final)
-
-    cambios_totales = reparador.cambios + motor.cambios
-    cambios_detalle = reparador.cambios + [{"tipo": "docstring", "linea": None, "mensaje": "Docstring agregado"}]*motor.cambios
-
-    return code_final, cambios_totales, reparador.cambios
-
-
-def analizar_errores_flake8(code):
-    from flake8.api import legacy as flake8
+def analizar_errores_flake8(code: str):
     style_guide = flake8.get_style_guide(ignore=['E501'])
     report = style_guide.input_file(filename='temp.py', lines=code.splitlines())
     errores = []
@@ -138,12 +67,10 @@ def analizar_errores_flake8(code):
         errores.append({"mensaje": e, "tipo": "warning"})
     return errores
 
-
 # ----------------- RUTAS -----------------
 @app.route("/")
 def home():
     return render_template("index.html")
-
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
@@ -151,7 +78,7 @@ def analyze():
     code = data.get("code", "")
     report = []
 
-    # Parse inicial
+    # Intento de parse AST
     try:
         ast.parse(code)
         report.append({"linea": 0, "mensaje": "No se encontraron errores críticos", "tipo": "ok"})
@@ -159,14 +86,13 @@ def analyze():
         report.append({"linea": e.lineno, "mensaje": str(e), "tipo": "critico"})
 
     # Reparar código
-    fixed_code, cambios, detalle = reparar_codigo(code)
+    fixed_code, cambios = reparar_codigo(code)
 
-    # Analizar estilo con flake8
+    # Analizar errores de estilo con flake8
     errores_flake = analizar_errores_flake8(fixed_code)
     report.extend(errores_flake)
 
     return jsonify(report=report, fixed_code=fixed_code, cambios=cambios)
-
 
 @app.route("/download", methods=["POST"])
 def download():
@@ -175,6 +101,7 @@ def download():
         "Content-Disposition": "attachment; filename=codigo_reparado.py"
     })
 
-
+# ----------------- RUN -----------------
 if __name__ == "__main__":
-    app.run()
+    # Para desarrollo local
+    app.run(debug=True)
